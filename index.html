@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="StudyMate AI — Your Personal AI Study Assistant. Transform your lecture notes into summaries, quizzes, and flashcards.">
+  <title>StudyMate AI — Your Personal AI Study Assistant</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <!-- Skip to main content link for keyboard accessibility -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Mobile Drawer Backdrop Overlay -->
+  <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+
+  <div class="app-layout">
+    <!-- =========================================================================
+         1. SIDEBAR NAVIGATION
+         ========================================================================= -->
+    <aside id="sidebar" class="sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <a href="#dashboard" class="brand-link" id="brand-home-link" aria-label="StudyMate AI Home">
+          <div class="brand-icon-wrapper" aria-hidden="true">
+            <svg class="brand-icon" viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="currentColor">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M6.5 6H20v18H6.5A2.5 2.5 0 0 1 4 21.5v-13A2.5 2.5 0 0 1 6.5 6z" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M20 6l8 4-8 4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M24 12v9" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+              <path d="M12 15v3" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="brand-text-group">
+            <span class="brand-title">StudyMate <span class="brand-ai">AI</span></span>
+            <span class="brand-tagline">Study Assistant</span>
+          </div>
+        </a>
+        <button id="sidebar-close-btn" class="sidebar-close-btn" aria-label="Close navigation menu">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav" aria-label="Primary Application Navigation">
+        <ul class="nav-list" role="list">
+          <li class="nav-item">
+            <button type="button" class="nav-link active" data-section="dashboard" id="nav-btn-dashboard" aria-current="page">
+              <span class="nav-icon-wrapper" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
+                  <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
+                  <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
+                  <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
+                </svg>
+              </span>
+              <span class="nav-label">Dashboard</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="nav-link" data-section="history" id="nav-btn-history">
+              <span class="nav-icon-wrapper" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <polyline points="12 7 12 12 15 15"></polyline>
+                </svg>
+              </span>
+              <span class="nav-label">History</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="nav-link" data-section="progress" id="nav-btn-progress">
+              <span class="nav-icon-wrapper" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                  <line x1="2" y1="20" x2="22" y2="20"></line>
+                </svg>
+              </span>
+              <span class="nav-label">Progress</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="nav-link" data-section="settings" id="nav-btn-settings">
+              <span class="nav-icon-wrapper" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </span>
+              <span class="nav-label">Settings</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="nav-link" data-section="about" id="nav-btn-about">
+              <span class="nav-icon-wrapper" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </span>
+              <span class="nav-label">About</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Sidebar Footer Badge & Info Area -->
+      <div class="sidebar-footer">
+        <div class="system-status-card">
+          <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span class="status-text">Phase 1: Foundation</span>
+          </div>
+          <p class="status-subtext">UI & Design System Active</p>
+          <div class="system-badge-row">
+            <span class="badge badge-accent">Vanilla JS</span>
+            <span class="badge badge-subtle">v1.0.0</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- =========================================================================
+         2. TOP NAVIGATION BAR & MAIN CONTENT WRAPPER
+         ========================================================================= -->
+    <div class="main-wrapper">
+      <header class="top-nav" aria-label="Top Bar">
+        <div class="top-nav-left">
+          <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="section-heading-group">
+            <h1 id="current-section-title" class="section-title">Dashboard</h1>
+            <p id="current-section-desc" class="section-subtitle">Create and manage your AI-powered study materials</p>
+          </div>
+        </div>
+
+        <div class="top-nav-right">
+          <!-- Theme Toggle Button -->
+          <button id="theme-toggle-btn" class="icon-btn theme-toggle-btn" aria-label="Switch to dark theme" title="Toggle theme">
+            <!-- Sun Icon (shown in dark theme) -->
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <!-- Moon Icon (shown in light theme) -->
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <!-- Student Profile decorative element -->
+          <div class="student-avatar-badge" title="Student Mode (Local Session)" aria-label="Student profile initials">
+            <span class="avatar-initials" aria-hidden="true">ST</span>
+            <span class="avatar-status-pip" aria-hidden="true"></span>
+          </div>
+        </div>
+      </header>
+
+      <!-- =========================================================================
+           3. MAIN CONTENT CONTAINER (SECTIONS)
+           ========================================================================= -->
+      <main id="main-content" class="content-container" tabindex="-1">
+        
+        <!-- =======================================================================
+             SECTION 1: DASHBOARD
+             ======================================================================= -->
+        <section id="section-dashboard" class="app-section active" aria-labelledby="current-section-title">
+          <!-- A. Welcome Banner -->
+          <div class="welcome-card">
+            <div class="welcome-content">
+              <div class="welcome-badge">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span>AI Study Engine Ready</span>
+              </div>
+              <h2 class="welcome-title">Ready to learn something new?</h2>
+              <p class="welcome-description">
+                Paste your lecture notes, textbook excerpts, or revision topics below. StudyMate AI transforms complex concepts into digestible summaries, multiple-choice quizzes, and active recall flashcards.
+              </p>
+              <div class="feature-pills-row">
+                <span class="feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Instant Summaries
+                </span>
+                <span class="feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Interactive Quizzes
+                </span>
+                <span class="feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Revision Flashcards
+                </span>
+              </div>
+            </div>
+            <div class="welcome-visual" aria-hidden="true">
+              <div class="visual-decor-circle">
+                <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 44V20a8 8 0 0 1 8-8h24a8 8 0 0 1 8 8v24"/>
+                  <path d="M12 44a8 8 0 0 0 8 8h24a8 8 0 0 0 8-8"/>
+                  <path d="M32 12v40"/>
+                  <circle cx="22" cy="28" r="3" fill="currentColor"/>
+                  <circle cx="42" cy="28" r="3" fill="currentColor"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- D. Quick Statistics Cards (0 initialized) -->
+          <div class="stats-grid" aria-label="Session Quick Statistics">
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value" id="stat-sessions-count">0</span>
+                <span class="stat-label">Study Sessions</span>
+              </div>
+              <span class="stat-subtext">Initialized</span>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-purple" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 14 14"></polyline>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value" id="stat-quizzes-count">0</span>
+                <span class="stat-label">Quizzes Completed</span>
+              </div>
+              <span class="stat-subtext">Initialized</span>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-emerald" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value" id="stat-score-avg">0%</span>
+                <span class="stat-label">Average Quiz Score</span>
+              </div>
+              <span class="stat-subtext">Initialized</span>
+            </div>
+          </div>
+
+          <!-- B. Study Input Card -->
+          <div class="card study-input-card">
+            <div class="card-header">
+              <div class="card-header-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3 class="card-title">Study Input Material</h3>
+                <p class="card-description">Provide your study topic and paste raw notes for AI analysis.</p>
+              </div>
+            </div>
+
+            <form id="study-input-form" class="study-form" novalidate>
+              <!-- Optional Topic Input -->
+              <div class="form-group">
+                <label for="topic-input" class="form-label">
+                  What are you studying? <span class="label-hint">(Optional)</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    id="topic-input"
+                    class="form-control"
+                    placeholder="e.g., Data Structures, DBMS Normalization, Operating System Deadlocks"
+                    maxlength="150"
+                  >
+                </div>
+              </div>
+
+              <!-- Notes Textarea with live character counter -->
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="notes-input" class="form-label">
+                    Paste your study notes <span class="required-asterisk" aria-hidden="true">*</span>
+                  </label>
+                  <div class="char-counter-container" id="char-counter-display" aria-live="polite">
+                    <span id="char-count" class="char-count-current">0</span>
+                    <span class="char-count-separator">/</span>
+                    <span class="char-count-max">10,000</span>
+                    <span class="sr-only">characters</span>
+                  </div>
+                </div>
+
+                <div class="textarea-wrapper">
+                  <textarea
+                    id="notes-input"
+                    class="form-control form-textarea"
+                    rows="8"
+                    placeholder="Paste lecture notes, textbook excerpts, bullet points, or revision material here (up to 10,000 characters)..."
+                    maxlength="10000"
+                    aria-describedby="char-counter-display input-error-alert"
+                    required
+                  ></textarea>
+                </div>
+
+                <!-- Validation message alert -->
+                <div id="input-error-alert" class="validation-alert" role="alert" hidden>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span id="input-error-text">Please paste or type study notes before generating materials.</span>
+                </div>
+              </div>
+
+              <!-- Options Grid: Difficulty & Summary Style -->
+              <div class="form-options-grid">
+                <!-- Difficulty Selection -->
+                <fieldset class="options-fieldset">
+                  <legend class="options-legend">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    Quiz Difficulty
+                  </legend>
+                  <div class="segmented-control" role="radiogroup" aria-label="Select quiz difficulty">
+                    <label class="segmented-option">
+                      <input type="radio" name="difficulty" value="Easy" id="diff-easy">
+                      <span class="segmented-label">Easy</span>
+                    </label>
+                    <label class="segmented-option">
+                      <input type="radio" name="difficulty" value="Medium" id="diff-medium" checked>
+                      <span class="segmented-label">Medium</span>
+                    </label>
+                    <label class="segmented-option">
+                      <input type="radio" name="difficulty" value="Hard" id="diff-hard">
+                      <span class="segmented-label">Hard</span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <!-- Summary Style Selection -->
+                <fieldset class="options-fieldset">
+                  <legend class="options-legend">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Summary Style
+                  </legend>
+                  <div class="segmented-control" role="radiogroup" aria-label="Select summary style">
+                    <label class="segmented-option">
+                      <input type="radio" name="summaryStyle" value="Simple Explanation" id="style-simple" checked>
+                      <span class="segmented-label">Simple</span>
+                    </label>
+                    <label class="segmented-option">
+                      <input type="radio" name="summaryStyle" value="Exam-Focused" id="style-exam">
+                      <span class="segmented-label">Exam-Focused</span>
+                    </label>
+                    <label class="segmented-option">
+                      <input type="radio" name="summaryStyle" value="Detailed Notes" id="style-detailed">
+                      <span class="segmented-label">Detailed</span>
+                    </label>
+                  </div>
+                </fieldset>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="form-actions-row">
+                <button type="submit" id="btn-generate" class="btn btn-primary btn-lg">
+                  <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2l2.4 7.4 7.6.6-5.8 5 1.8 7.5L12 18.5 6 22.5l1.8-7.5-5.8-5 7.6-.6z"></path>
+                  </svg>
+                  <span>Generate Study Material</span>
+                </button>
+
+                <button type="button" id="btn-clear-input" class="btn btn-secondary">
+                  <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Clear Input</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- C. Study Material Workspace (Tabs) -->
+          <div class="card workspace-card">
+            <div class="workspace-header">
+              <div class="workspace-title-group">
+                <h3 class="card-title">Study Material Workspace</h3>
+                <p class="card-description">Toggle between your generated summary, practice quiz, and flashcards.</p>
+              </div>
+              <div class="workspace-phase-badge">
+                <span class="badge badge-accent">Engine Stage: Phase 1 UI</span>
+              </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="tabs-nav" role="tablist" aria-label="Study Material Workspace Tabs">
+              <button
+                type="button"
+                id="tab-summary"
+                class="tab-btn active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-summary"
+                tabindex="0"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Summary</span>
+              </button>
+
+              <button
+                type="button"
+                id="tab-quiz"
+                class="tab-btn"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-quiz"
+                tabindex="-1"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span>Quiz</span>
+              </button>
+
+              <button
+                type="button"
+                id="tab-flashcards"
+                class="tab-btn"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-flashcards"
+                tabindex="-1"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                <span>Flashcards</span>
+              </button>
+            </div>
+
+            <!-- Tab Panels -->
+            <div class="tabs-content">
+              <!-- Tab Panel 1: Summary -->
+              <div
+                id="panel-summary"
+                class="tab-panel active"
+                role="tabpanel"
+                aria-labelledby="tab-summary"
+                tabindex="0"
+              >
+                <div class="empty-state">
+                  <div class="empty-state-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 6h24l16 16v36a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"></path>
+                      <polyline points="40 6 40 22 56 22"></polyline>
+                      <line x1="24" y1="32" x2="44" y2="32"></line>
+                      <line x1="24" y1="42" x2="44" y2="42"></line>
+                      <line x1="24" y1="50" x2="36" y2="50"></line>
+                    </svg>
+                  </div>
+                  <h4 class="empty-state-title">Your summary will appear here</h4>
+                  <p class="empty-state-description">
+                    Enter your notes above and click "Generate Study Material". In Phase 3, StudyMate AI will analyze your content and display an organized breakdown with key concepts, bulleted takeaways, and definitions.
+                  </p>
+                  <div class="empty-state-badge">
+                    <span class="badge badge-subtle">Summary Engine • Ready for Phase 2 Workspace</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab Panel 2: Quiz -->
+              <div
+                id="panel-quiz"
+                class="tab-panel"
+                role="tabpanel"
+                aria-labelledby="tab-quiz"
+                tabindex="0"
+                hidden
+              >
+                <div class="empty-state">
+                  <div class="empty-state-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="32" cy="32" r="26"></circle>
+                      <path d="M25 24a7 7 0 0 1 13.8 2.2c0 4.6-6.8 6.8-6.8 6.8"></path>
+                      <circle cx="32" cy="45" r="2" fill="currentColor"></circle>
+                    </svg>
+                  </div>
+                  <h4 class="empty-state-title">Ready to test your knowledge?</h4>
+                  <p class="empty-state-description">
+                    Multiple-choice questions with answer choices, hints, and detailed explanations will be generated directly from your lecture notes to test active recall.
+                  </p>
+                  <div class="empty-state-badge">
+                    <span class="badge badge-subtle">Quiz Engine • Implementation in Phase 2</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab Panel 3: Flashcards -->
+              <div
+                id="panel-flashcards"
+                class="tab-panel"
+                role="tabpanel"
+                aria-labelledby="tab-flashcards"
+                tabindex="0"
+                hidden
+              >
+                <div class="empty-state">
+                  <div class="empty-state-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="8" y="16" width="48" height="34" rx="4" ry="4"></rect>
+                      <path d="M16 16V10a2 2 0 0 1 2-2h28a2 2 0 0 1 2 2v6"></path>
+                      <line x1="20" y1="28" x2="44" y2="28"></line>
+                      <line x1="20" y1="36" x2="36" y2="36"></line>
+                    </svg>
+                  </div>
+                  <h4 class="empty-state-title">Make learning stick</h4>
+                  <p class="empty-state-description">
+                    Interactive flip cards designed for spaced repetition and self-testing will appear here. You will be able to mark cards as mastered or review them on repeat.
+                  </p>
+                  <div class="empty-state-badge">
+                    <span class="badge badge-subtle">Flashcards Engine • Implementation in Phase 2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =======================================================================
+             SECTION 2: HISTORY
+             ======================================================================= -->
+        <section id="section-history" class="app-section" aria-labelledby="history-title" hidden>
+          <div class="section-intro">
+            <div>
+              <h2 id="history-title" class="section-heading">Study History</h2>
+              <p class="section-lead">Review previous study sessions, revisited summaries, and completed quizzes.</p>
+            </div>
+          </div>
+
+          <!-- History Controls Bar -->
+          <div class="card history-controls-card">
+            <div class="history-controls-grid">
+              <div class="search-input-wrapper">
+                <span class="search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </span>
+                <input
+                  type="search"
+                  id="history-search"
+                  class="form-control history-search-input"
+                  placeholder="Search previous topics or notes..."
+                  disabled
+                  aria-label="Search study history (Available in Phase 4)"
+                >
+                <span class="badge badge-subtle history-ctrl-badge">Phase 4</span>
+              </div>
+
+              <div class="history-filter-wrapper">
+                <label for="history-filter-select" class="sr-only">Filter history by type</label>
+                <select id="history-filter-select" class="form-control" disabled>
+                  <option value="all">All Material Types</option>
+                  <option value="summary">Summaries Only</option>
+                  <option value="quiz">Quizzes Only</option>
+                  <option value="flashcards">Flashcards Only</option>
+                </select>
+              </div>
+
+              <div class="history-actions-wrapper">
+                <button type="button" id="btn-clear-history" class="btn btn-secondary btn-sm" disabled title="No history to clear in Phase 1">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Clear History</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- History Empty State -->
+          <div class="card">
+            <div class="empty-state">
+              <div class="empty-state-icon" aria-hidden="true">
+                <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="32" cy="32" r="26"></circle>
+                  <polyline points="32 16 32 32 42 42"></polyline>
+                </svg>
+              </div>
+              <h3 class="empty-state-title">No Study Sessions Yet</h3>
+              <p class="empty-state-description">
+                As you generate study guides, take practice quizzes, and review flashcard decks, your session history will be recorded here so you can review them anytime.
+              </p>
+              <div class="feature-timeline-note">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>LocalStorage session persistence will be fully connected in <strong>Phase 4</strong>.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =======================================================================
+             SECTION 3: PROGRESS
+             ======================================================================= -->
+        <section id="section-progress" class="app-section" aria-labelledby="progress-title" hidden>
+          <div class="section-intro">
+            <div>
+              <h2 id="progress-title" class="section-heading">Learning Analytics</h2>
+              <p class="section-lead">Track your quiz accuracy, study velocity, and topic mastery over time.</p>
+            </div>
+          </div>
+
+          <!-- Analytics Summary Cards -->
+          <div class="analytics-cards-grid" aria-label="Learning Analytics Summary">
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value">0</span>
+                <span class="stat-label">Total Study Sessions</span>
+              </div>
+              <span class="stat-subtext">Zero sessions</span>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-purple" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value">0</span>
+                <span class="stat-label">Quizzes Attempted</span>
+              </div>
+              <span class="stat-subtext">Zero attempts</span>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-amber" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                  <line x1="2" y1="20" x2="22" y2="20"></line>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value">0%</span>
+                <span class="stat-label">Average Score</span>
+              </div>
+              <span class="stat-subtext">No attempts yet</span>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-emerald" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value">0%</span>
+                <span class="stat-label">Best Score</span>
+              </div>
+              <span class="stat-subtext">Awaiting first quiz</span>
+            </div>
+          </div>
+
+          <!-- Quiz Performance Chart Container -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <div class="card-header-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                  <polyline points="17 6 23 6 23 12"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3 class="card-title">Quiz Performance Trend</h3>
+                <p class="card-description">Chronological scoring breakdown across attempted quizzes.</p>
+              </div>
+            </div>
+
+            <div class="chart-container">
+              <!-- Native SVG visual placeholder for chart grid (no external chart library) -->
+              <div class="chart-empty-state">
+                <svg class="chart-grid-svg" viewBox="0 0 500 200" preserveAspectRatio="none" aria-hidden="true">
+                  <line x1="40" y1="30" x2="480" y2="30" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="4 4" />
+                  <line x1="40" y1="75" x2="480" y2="75" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="4 4" />
+                  <line x1="40" y1="120" x2="480" y2="120" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="4 4" />
+                  <line x1="40" y1="165" x2="480" y2="165" stroke="currentColor" stroke-opacity="0.2" />
+                  <line x1="40" y1="20" x2="40" y2="165" stroke="currentColor" stroke-opacity="0.2" />
+                  <text x="15" y="35" font-size="11" fill="currentColor" opacity="0.5">100%</text>
+                  <text x="15" y="80" font-size="11" fill="currentColor" opacity="0.5">75%</text>
+                  <text x="15" y="125" font-size="11" fill="currentColor" opacity="0.5">50%</text>
+                  <text x="15" y="170" font-size="11" fill="currentColor" opacity="0.5">0%</text>
+                </svg>
+                <div class="chart-overlay-content">
+                  <div class="empty-state-icon-sm" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="20" x2="18" y2="10"></line>
+                      <line x1="12" y1="20" x2="12" y2="4"></line>
+                      <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                  </div>
+                  <h4 class="empty-state-subtitle">No Quiz Performance Data Available</h4>
+                  <p class="empty-state-description">
+                    Complete multiple-choice quizzes in future phases to visualize score trends, accuracy percentages, and subject retention.
+                  </p>
+                  <span class="badge badge-subtle">Native Chart Visualization • Phase 4 Integration</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity Area -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-header-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3 class="card-title">Recent Study Activity</h3>
+                <p class="card-description">Chronological log of notes processed and quizzes submitted.</p>
+              </div>
+            </div>
+            <div class="empty-state empty-state-compact">
+              <p class="empty-state-description">
+                No recent study activity logged. When quizzes and flashcards are completed in Phase 2 & 4, your study activity log will appear here.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- =======================================================================
+             SECTION 4: SETTINGS
+             ======================================================================= -->
+        <section id="section-settings" class="app-section" aria-labelledby="settings-title" hidden>
+          <div class="section-intro">
+            <div>
+              <h2 id="settings-title" class="section-heading">Application Settings</h2>
+              <p class="section-lead">Manage your AI API connection, appearance theme, study preferences, and data.</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <!-- A. AI Provider Configuration Card -->
+            <div class="card settings-card">
+              <div class="card-header">
+                <div class="card-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="card-title">AI Provider Configuration</h3>
+                  <p class="card-description">Configure the AI engine for generating summaries, quizzes, and flashcards.</p>
+                </div>
+              </div>
+
+              <!-- Integration status banner -->
+              <div class="info-callout">
+                <div class="callout-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </div>
+                <div class="callout-body">
+                  <h4 class="callout-title">Phase 1 Notice: AI Connection Inactive</h4>
+                  <p class="callout-text">
+                    StudyMate AI frontend is currently in Phase 1 (UI Foundation). Real API integration with Google Gemini will be connected during Phase 3. No live requests are made at this stage.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Security warning banner -->
+              <div class="warning-callout">
+                <div class="callout-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                </div>
+                <div class="callout-body">
+                  <h4 class="callout-title">Client-Side Security Warning</h4>
+                  <p class="callout-text">
+                    Browser-stored API keys are accessible to anyone with direct physical or administrative access to this browser environment. Never use production keys with billing risks in public or shared browsers.
+                  </p>
+                </div>
+              </div>
+
+              <!-- AI Form Controls -->
+              <div class="settings-form-group">
+                <label for="ai-provider-select" class="form-label">AI Model Provider</label>
+                <select id="ai-provider-select" class="form-control">
+                  <option value="gemini" selected>Google Gemini (Recommended — Gemini 1.5 Flash)</option>
+                  <option value="custom" disabled>Custom Endpoint (Phase 3)</option>
+                </select>
+                <span class="field-help-text">Google Gemini provides high-speed contextual comprehension suitable for educational summarization.</span>
+              </div>
+
+              <div class="settings-form-group">
+                <label for="api-key-input" class="form-label">Gemini API Key</label>
+                <div class="api-key-input-wrapper">
+                  <input
+                    type="password"
+                    id="api-key-input"
+                    class="form-control code-input"
+                    placeholder="Enter your Gemini API Key (e.g., AIzaSy...)"
+                    autocomplete="off"
+                    spellcheck="false"
+                  >
+                  <button type="button" id="btn-toggle-key-visibility" class="btn-toggle-visibility" aria-label="Show API key" title="Show/Hide API key">
+                    <!-- Eye Icon (when hidden) -->
+                    <svg class="icon-eye-show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <!-- Eye-off Icon (when visible) -->
+                    <svg class="icon-eye-hide" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-help-text">Obtain a free developer key from Google AI Studio (ai.google.dev). Real validation occurs in Phase 3.</span>
+              </div>
+
+              <div class="btn-group-row">
+                <button type="button" id="btn-save-key" class="btn btn-primary">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span>Save API Key</span>
+                </button>
+                <button type="button" id="btn-remove-key" class="btn btn-secondary">
+                  <span>Remove Key</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- B. Appearance Theme Card -->
+            <div class="card settings-card">
+              <div class="card-header">
+                <div class="card-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Appearance & Theme</h3>
+                  <p class="card-description">Switch between clean light and distraction-free dark theme.</p>
+                </div>
+              </div>
+
+              <div class="theme-selection-grid" role="radiogroup" aria-label="Select theme">
+                <label class="theme-option-card" id="theme-card-light">
+                  <input type="radio" name="appTheme" value="light" id="theme-radio-light" checked>
+                  <div class="theme-option-preview theme-preview-light" aria-hidden="true">
+                    <div class="preview-header"></div>
+                    <div class="preview-body">
+                      <div class="preview-line"></div>
+                      <div class="preview-line short"></div>
+                    </div>
+                  </div>
+                  <div class="theme-option-info">
+                    <span class="theme-option-title">Light Theme</span>
+                    <span class="theme-option-desc">Crisp slate contrast for daytime study</span>
+                  </div>
+                </label>
+
+                <label class="theme-option-card" id="theme-card-dark">
+                  <input type="radio" name="appTheme" value="dark" id="theme-radio-dark">
+                  <div class="theme-option-preview theme-preview-dark" aria-hidden="true">
+                    <div class="preview-header"></div>
+                    <div class="preview-body">
+                      <div class="preview-line"></div>
+                      <div class="preview-line short"></div>
+                    </div>
+                  </div>
+                  <div class="theme-option-info">
+                    <span class="theme-option-title">Dark Theme</span>
+                    <span class="theme-option-desc">Deep slate palette for low-light night study</span>
+                  </div>
+                </label>
+              </div>
+
+              <div class="theme-status-note">
+                <span id="theme-status-indicator" class="badge badge-subtle">Current: Light Mode (Persisted in LocalStorage)</span>
+              </div>
+            </div>
+
+            <!-- C. Study Preferences Card -->
+            <div class="card settings-card">
+              <div class="card-header">
+                <div class="card-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Study Preferences</h3>
+                  <p class="card-description">Set your default generation parameters and animation behavior.</p>
+                </div>
+              </div>
+
+              <form id="preferences-form" class="preferences-form">
+                <div class="settings-form-group">
+                  <label for="pref-default-difficulty" class="form-label">Default Quiz Difficulty</label>
+                  <select id="pref-default-difficulty" class="form-control">
+                    <option value="Easy">Easy (Fundamental definitions & concepts)</option>
+                    <option value="Medium" selected>Medium (Standard conceptual applications)</option>
+                    <option value="Hard">Hard (Deep analytical & edge case problems)</option>
+                  </select>
+                </div>
+
+                <div class="settings-form-group">
+                  <label for="pref-default-summary-style" class="form-label">Preferred Summary Style</label>
+                  <select id="pref-default-summary-style" class="form-control">
+                    <option value="Simple Explanation" selected>Simple Explanation (Plain English analogies)</option>
+                    <option value="Exam-Focused">Exam-Focused (Formulas, bullet points, high-yield terms)</option>
+                    <option value="Detailed Notes">Detailed Notes (Thorough textbook-style hierarchy)</option>
+                  </select>
+                </div>
+
+                <div class="settings-form-group">
+                  <label for="pref-flashcard-animation" class="form-label">Flashcard Flip Animation</label>
+                  <select id="pref-flashcard-animation" class="form-control">
+                    <option value="flip" selected>3D Card Flip (Realistic)</option>
+                    <option value="slide">Horizontal Slide</option>
+                    <option value="fade">Smooth Fade</option>
+                  </select>
+                </div>
+
+                <button type="submit" id="btn-save-prefs" class="btn btn-primary">
+                  <span>Save Study Preferences</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- D. Data Management Card -->
+            <div class="card settings-card">
+              <div class="card-header">
+                <div class="card-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    <circle cx="12" cy="12" r="9"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Data Management</h3>
+                  <p class="card-description">Control local storage cache, reset preferences, or wipe session records.</p>
+                </div>
+              </div>
+
+              <div class="data-actions-list">
+                <div class="data-action-item">
+                  <div class="data-action-info">
+                    <span class="data-action-name">Clear Study History</span>
+                    <span class="data-action-desc">Deletes all saved summaries and flashcards from local storage.</span>
+                  </div>
+                  <button type="button" id="btn-data-clear-history" class="btn btn-secondary btn-sm" disabled>
+                    <span>Clear History</span>
+                  </button>
+                </div>
+
+                <div class="data-action-item">
+                  <div class="data-action-info">
+                    <span class="data-action-name">Reset Quiz Progress</span>
+                    <span class="data-action-desc">Wipes recorded quiz scores and resets analytics graphs.</span>
+                  </div>
+                  <button type="button" id="btn-data-reset-progress" class="btn btn-secondary btn-sm" disabled>
+                    <span>Reset Scores</span>
+                  </button>
+                </div>
+
+                <div class="data-action-item">
+                  <div class="data-action-info">
+                    <span class="data-action-name">Reset Application Preferences</span>
+                    <span class="data-action-desc">Restores all difficulty, summary, and theme settings to defaults.</span>
+                  </div>
+                  <button type="button" id="btn-data-reset-prefs" class="btn btn-danger btn-sm">
+                    <span>Reset Defaults</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =======================================================================
+             SECTION 5: ABOUT
+             ======================================================================= -->
+        <section id="section-about" class="app-section" aria-labelledby="about-title" hidden>
+          <div class="about-hero-card card">
+            <div class="about-hero-badge">
+              <span class="badge badge-accent">Phase 1 Foundation</span>
+              <span class="badge badge-subtle">Version 1.0.0</span>
+            </div>
+            <h2 id="about-title" class="about-title">StudyMate <span class="brand-ai">AI</span></h2>
+            <p class="about-tagline">Your Personal AI Study Assistant</p>
+            <p class="about-description">
+              StudyMate AI is a modern, student-centric web application engineered to transform dense lecture notes, slide transcripts, and textbook chapters into digestible summaries, multiple-choice quizzes, and spaced repetition flashcards.
+            </p>
+          </div>
+
+          <div class="about-grid">
+            <!-- Project Scope & Philosophy -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 16v-4"></path>
+                    <path d="M12 8h.01"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Project Purpose & Scope</h3>
+                  <p class="card-description">Built for focused learning without SaaS bloat.</p>
+                </div>
+              </div>
+              <p class="card-text">
+                Students often spend hours manually reading through pages of unstructured notes without testing active recall. StudyMate AI automates the transition from passive reading to active learning by combining structural summarization with self-assessment quizzes and revision cards.
+              </p>
+            </div>
+
+            <!-- Technology Stack -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Technology Stack</h3>
+                  <p class="card-description">Pure standard web technologies without external dependencies.</p>
+                </div>
+              </div>
+              <ul class="tech-stack-list">
+                <li class="tech-item">
+                  <span class="tech-badge">HTML5</span>
+                  <span class="tech-desc">Semantic document outline, accessible ARIA roles, native dialogs.</span>
+                </li>
+                <li class="tech-item">
+                  <span class="tech-badge">CSS3</span>
+                  <span class="tech-desc">CSS Custom Properties (Tokens), Flexbox, CSS Grid, media queries.</span>
+                </li>
+                <li class="tech-item">
+                  <span class="tech-badge">Vanilla JS</span>
+                  <span class="tech-desc">ES6+ modular functions, native event handling, LocalStorage API.</span>
+                </li>
+                <li class="tech-item">
+                  <span class="tech-badge">Assets</span>
+                  <span class="tech-desc">Native SVG icons & System Font Stack (zero external network requests).</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Phased Architecture Roadmap -->
+            <div class="card full-width-card">
+              <div class="card-header">
+                <div class="card-header-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Engineering Development Roadmap</h3>
+                  <p class="card-description">Clear breakdown of development phases and architectural milestones.</p>
+                </div>
+              </div>
+
+              <div class="roadmap-grid">
+                <div class="roadmap-step roadmap-step-current">
+                  <div class="step-badge">Phase 1 • Current</div>
+                  <h4 class="step-title">Frontend Foundation & UI</h4>
+                  <p class="step-desc">
+                    Complete responsive layout, design system, theme switching, accessible tabs, character counting, and validation.
+                  </p>
+                  <span class="step-status status-complete">✓ Completed</span>
+                </div>
+
+                <div class="roadmap-step">
+                  <div class="step-badge">Phase 2 • Upcoming</div>
+                  <h4 class="step-title">Study Workspace Engine</h4>
+                  <p class="step-desc">
+                    Interactive quiz scoring engine with immediate feedback, hint system, and flip flashcard decks.
+                  </p>
+                  <span class="step-status">Scheduled Next</span>
+                </div>
+
+                <div class="roadmap-step">
+                  <div class="step-badge">Phase 3 • Upcoming</div>
+                  <h4 class="step-title">Google Gemini Integration</h4>
+                  <p class="step-desc">
+                    Live client-side connection to Google Gemini API for automated note extraction, question generation, and prompt engineering.
+                  </p>
+                  <span class="step-status">Scheduled Next</span>
+                </div>
+
+                <div class="roadmap-step">
+                  <div class="step-badge">Phase 4 • Upcoming</div>
+                  <h4 class="step-title">History & Learning Analytics</h4>
+                  <p class="step-desc">
+                    LocalStorage persistence engine, searchable study history, score trend charts, and reset tools.
+                  </p>
+                  <span class="step-status">Scheduled Next</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       ACCESSIBLE MODAL DIALOG COMPONENT
+       ========================================================================= -->
+  <dialog id="app-modal" class="modal-dialog" aria-labelledby="modal-title" aria-describedby="modal-message">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div id="modal-icon-container" class="modal-icon-wrapper" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 id="modal-title" class="modal-title">Confirm Action</h3>
+        <button type="button" id="modal-close-btn" class="modal-close-btn" aria-label="Close dialog">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-message" class="modal-message">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="modal-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="modal-confirm-btn" class="btn btn-primary">Confirm</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- =========================================================================
+       ACCESSIBLE TOAST NOTIFICATION CONTAINER
+       ========================================================================= -->
+  <div id="toast-container" class="toast-container" role="region" aria-label="Notifications" aria-live="polite"></div>
+</body>
+</html>
+
