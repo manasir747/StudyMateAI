@@ -116,12 +116,12 @@
         <div class="system-status-card">
           <div class="status-indicator">
             <span class="status-dot"></span>
-            <span class="status-text">Phase 1: Foundation</span>
+            <span class="status-text">Phase 2: Study Engine</span>
           </div>
-          <p class="status-subtext">UI & Design System Active</p>
+          <p class="status-subtext">Interactive Learning Active</p>
           <div class="system-badge-row">
             <span class="badge badge-accent">Vanilla JS</span>
-            <span class="badge badge-subtle">v1.0.0</span>
+            <span class="badge badge-subtle">v2.0.0</span>
           </div>
         </div>
       </div>
@@ -432,7 +432,7 @@
                 <p class="card-description">Toggle between your generated summary, practice quiz, and flashcards.</p>
               </div>
               <div class="workspace-phase-badge">
-                <span class="badge badge-accent">Engine Stage: Phase 1 UI</span>
+                <span class="badge badge-accent" id="workspace-stage-badge">Phase 2: Interactive Study Engine</span>
               </div>
             </div>
 
@@ -500,7 +500,8 @@
                 aria-labelledby="tab-summary"
                 tabindex="0"
               >
-                <div class="empty-state">
+                <!-- Empty State (Shown before generation) -->
+                <div id="summary-empty-state" class="empty-state">
                   <div class="empty-state-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M16 6h24l16 16v36a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"></path>
@@ -512,12 +513,15 @@
                   </div>
                   <h4 class="empty-state-title">Your summary will appear here</h4>
                   <p class="empty-state-description">
-                    Enter your notes above and click "Generate Study Material". In Phase 3, StudyMate AI will analyze your content and display an organized breakdown with key concepts, bulleted takeaways, and definitions.
+                    Enter your notes above and click "Generate Study Material" to produce a structured breakdown with key concepts, bulleted takeaways, and definitions.
                   </p>
                   <div class="empty-state-badge">
-                    <span class="badge badge-subtle">Summary Engine • Ready for Phase 2 Workspace</span>
+                    <span class="badge badge-subtle">Summary Engine • Ready for Study Notes</span>
                   </div>
                 </div>
+
+                <!-- Dynamic Summary Content View (Populated on generation) -->
+                <div id="summary-content-view" class="summary-content-view" hidden></div>
               </div>
 
               <!-- Tab Panel 2: Quiz -->
@@ -529,7 +533,8 @@
                 tabindex="0"
                 hidden
               >
-                <div class="empty-state">
+                <!-- Empty State (Shown before generation) -->
+                <div id="quiz-empty-state" class="empty-state">
                   <div class="empty-state-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="32" cy="32" r="26"></circle>
@@ -539,12 +544,15 @@
                   </div>
                   <h4 class="empty-state-title">Ready to test your knowledge?</h4>
                   <p class="empty-state-description">
-                    Multiple-choice questions with answer choices, hints, and detailed explanations will be generated directly from your lecture notes to test active recall.
+                    Multiple-choice questions with answer choices, instant scoring, and detailed explanations will be generated directly from your study topic.
                   </p>
                   <div class="empty-state-badge">
-                    <span class="badge badge-subtle">Quiz Engine • Implementation in Phase 2</span>
+                    <span class="badge badge-subtle">Quiz Engine • 5 Questions per Difficulty</span>
                   </div>
                 </div>
+
+                <!-- Dynamic Quiz Content View (Populated on generation) -->
+                <div id="quiz-content-view" class="quiz-content-view" hidden></div>
               </div>
 
               <!-- Tab Panel 3: Flashcards -->
@@ -556,7 +564,8 @@
                 tabindex="0"
                 hidden
               >
-                <div class="empty-state">
+                <!-- Empty State (Shown before generation) -->
+                <div id="flashcards-empty-state" class="empty-state">
                   <div class="empty-state-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="8" y="16" width="48" height="34" rx="4" ry="4"></rect>
@@ -567,12 +576,15 @@
                   </div>
                   <h4 class="empty-state-title">Make learning stick</h4>
                   <p class="empty-state-description">
-                    Interactive flip cards designed for spaced repetition and self-testing will appear here. You will be able to mark cards as mastered or review them on repeat.
+                    Interactive flip cards designed for spaced repetition and self-testing will appear here. You can mark cards as Known or Needs Review and shuffle the deck.
                   </p>
                   <div class="empty-state-badge">
-                    <span class="badge badge-subtle">Flashcards Engine • Implementation in Phase 2</span>
+                    <span class="badge badge-subtle">Flashcards Engine • Interactive 3D Decks</span>
                   </div>
                 </div>
+
+                <!-- Dynamic Flashcards Content View (Populated on generation) -->
+                <div id="flashcards-content-view" class="flashcards-content-view" hidden></div>
               </div>
             </div>
           </div>
@@ -1158,8 +1170,8 @@
               </div>
 
               <div class="roadmap-grid">
-                <div class="roadmap-step roadmap-step-current">
-                  <div class="step-badge">Phase 1 • Current</div>
+                <div class="roadmap-step">
+                  <div class="step-badge">Phase 1 • Milestone</div>
                   <h4 class="step-title">Frontend Foundation & UI</h4>
                   <p class="step-desc">
                     Complete responsive layout, design system, theme switching, accessible tabs, character counting, and validation.
@@ -1167,13 +1179,13 @@
                   <span class="step-status status-complete">✓ Completed</span>
                 </div>
 
-                <div class="roadmap-step">
-                  <div class="step-badge">Phase 2 • Upcoming</div>
+                <div class="roadmap-step roadmap-step-current">
+                  <div class="step-badge">Phase 2 • Current</div>
                   <h4 class="step-title">Study Workspace Engine</h4>
                   <p class="step-desc">
-                    Interactive quiz scoring engine with immediate feedback, hint system, and flip flashcard decks.
+                    Interactive sample data generation, summary downloads/copies, 5-question multi-choice quiz engine, and 3D flashcard decks.
                   </p>
-                  <span class="step-status">Scheduled Next</span>
+                  <span class="step-status status-complete">✓ Active & Implemented</span>
                 </div>
 
                 <div class="roadmap-step">

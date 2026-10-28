@@ -2147,6 +2147,658 @@ a {
     min-width: auto;
     width: 100%;
   }
+
+  .flashcard-stage {
+    height: 290px;
+  }
+
+  .flashcard-face {
+    padding: var(--space-20);
+  }
+
+  .flashcard-content-text {
+    font-size: 1.05rem;
+  }
+
+  .quiz-jump-indicators {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   19. PHASE 2: SUMMARY VIEW
+   -------------------------------------------------------------------------- */
+.summary-content-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  animation: fadeIn 220ms ease-out forwards;
+}
+
+.summary-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.summary-meta-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.summary-actions-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  flex-wrap: wrap;
+}
+
+.summary-title-heading {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-12);
+}
+
+.summary-body-text {
+  font-size: 0.96rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  margin-bottom: var(--space-20);
+}
+
+.summary-body-text p {
+  margin-bottom: var(--space-12);
+}
+
+.summary-body-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Takeaways Box */
+.takeaways-box {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--primary-border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-20);
+  margin-bottom: var(--space-20);
+}
+
+.takeaways-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-bottom: var(--space-12);
+}
+
+.takeaways-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.takeaways-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.takeaway-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-10);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.takeaway-item-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Key Concepts Cards */
+.concepts-section {
+  margin-top: var(--space-8);
+}
+
+.concepts-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-14);
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.concepts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-16);
+}
+
+.concept-item-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-16);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.concept-item-card:hover {
+  border-color: var(--primary-border);
+  transform: translateY(-2px);
+}
+
+.concept-term {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: var(--space-6, 6px);
+}
+
+.concept-def {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   20. PHASE 2: QUIZ VIEW
+   -------------------------------------------------------------------------- */
+.quiz-content-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  animation: fadeIn 220ms ease-out forwards;
+}
+
+.quiz-header-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.quiz-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+.quiz-question-counter {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.quiz-progress-track {
+  width: 100%;
+  height: 6px;
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.quiz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+/* Question Box */
+.quiz-question-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-24);
+  box-shadow: var(--shadow-sm);
+}
+
+.quiz-question-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.45;
+  margin-bottom: var(--space-24);
+}
+
+.quiz-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.quiz-option-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-14);
+  width: 100%;
+  padding: var(--space-14) var(--space-16);
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quiz-option-btn:hover {
+  background-color: var(--bg-subtle);
+  border-color: var(--border-hover);
+}
+
+.quiz-option-btn.selected {
+  background-color: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.quiz-option-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.quiz-option-btn.selected .quiz-option-letter {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.quiz-option-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* Quiz Navigation Row */
+.quiz-navigation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  flex-wrap: wrap;
+  padding-top: var(--space-12);
+}
+
+.quiz-jump-indicators {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.quiz-jump-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quiz-jump-dot:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.quiz-jump-dot.current {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.quiz-jump-dot.answered:not(.current) {
+  background-color: var(--primary-subtle);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+/* Quiz Results Card */
+.quiz-results-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-32);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.quiz-results-score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary-subtle) 0%, var(--accent-subtle) 100%);
+  border: 3px solid var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.results-score-num {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.results-score-percent {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.quiz-results-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.quiz-results-message {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  max-width: 520px;
+  line-height: 1.5;
+}
+
+.quiz-results-breakdown-pills {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Review Section */
+.quiz-review-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  margin-top: var(--space-20);
+}
+
+.review-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.review-question-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-20);
+  box-shadow: var(--shadow-xs);
+}
+
+.review-question-card.status-correct {
+  border-left: 4px solid var(--success);
+}
+
+.review-question-card.status-incorrect {
+  border-left: 4px solid var(--danger);
+}
+
+.review-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-bottom: var(--space-14);
+}
+
+.review-question-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.review-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-bottom: var(--space-14);
+}
+
+.review-option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-10) var(--space-14);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.review-option-item.user-correct {
+  background-color: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.review-option-item.user-wrong {
+  background-color: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.review-option-item.actual-correct {
+  background-color: var(--success-bg);
+  border-color: var(--success);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.review-explanation-box {
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-12) var(--space-16);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.review-explanation-box svg {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   21. PHASE 2: FLASHCARDS VIEW (3D FLIP CARD)
+   -------------------------------------------------------------------------- */
+.flashcards-content-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  animation: fadeIn 220ms ease-out forwards;
+}
+
+.flashcards-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.flashcards-progress-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.flashcard-stage {
+  perspective: 1200px;
+  width: 100%;
+  max-width: 620px;
+  height: 320px;
+  margin: var(--space-16) auto;
+}
+
+.flashcard-3d-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.flashcard-3d-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-3d-card:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 4px;
+}
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--radius-lg);
+  padding: var(--space-32);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-surface);
+  transition: border-color var(--transition-fast);
+}
+
+.flashcard-3d-card:hover .flashcard-face {
+  border-color: var(--primary-border);
+}
+
+.flashcard-front {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-subtle) 100%);
+}
+
+.flashcard-back {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--primary-subtle) 100%);
+  transform: rotateY(180deg);
+}
+
+.flashcard-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flashcard-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.flashcard-back .flashcard-tag {
+  color: var(--primary);
+}
+
+.flashcard-content-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.55;
+  text-align: center;
+  margin: auto 0;
+  overflow-y: auto;
+  max-height: 180px;
+}
+
+.flashcard-bottom-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6, 6px);
+}
+
+.flashcard-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  max-width: 620px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.flashcard-mark-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-16);
+}
+
+.flashcard-nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
 }
 
 /* --------------------------------------------------------------------------
@@ -2160,6 +2812,10 @@ a {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .flashcard-3d-card {
+    transition: none !important;
   }
 }
 
