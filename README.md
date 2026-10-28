@@ -1,7 +1,7 @@
 # StudyMate AI — Your Personal AI Study Assistant
 
 > **Phase 3: AI API Integration & Response Validation**  
-> A modern, responsive, student-centric web application engineered to transform raw lecture notes into structured summaries, multiple-choice quizzes, and interactive 3D flashcards using the Google Gemini AI API (`gemini-1.5-flash`).
+> A modern, responsive, student-centric web application engineered to transform raw lecture notes into structured summaries, multiple-choice quizzes, and interactive 3D flashcards using the Google Gemini AI API (`gemini-3.5-flash-lite`).
 
 ---
 
@@ -12,7 +12,7 @@
 ### Current Development Stage: Phase 3
 Building on the frontend foundation (Phase 1) and interactive learning interfaces (Phase 2), **Phase 3** connects live artificial intelligence via Google Gemini:
 
-- **Google Gemini API Integration**: Direct client-side connection to `gemini-1.5-flash` using native `fetch()` and `AbortController`.
+- **Google Gemini API Integration**: Direct client-side connection to `gemini-3.5-flash-lite` using native `fetch()` and `AbortController`.
 - **API Key Management**: Secure client-side storage in `localStorage` (`studymate_api_key`), credential masking, visibility toggling, and easy key removal with confirmation.
 - **Connection Diagnostics**: Instant one-click connection test button (`#btn-test-connection`) with visual feedback verifying API key validity and model accessibility before generating study materials.
 - **Prompt Engineering**: Highly specialized prompt instructing Gemini to return strict JSON containing formatted summary paragraphs, key takeaways, concept definitions, a 5-question multiple-choice quiz, and 6+ active recall flashcards.
@@ -30,7 +30,7 @@ Built strictly adhering to native web standards without external libraries, pack
 - **HTML5**: Semantic document structure (`<header>`, `<nav>`, `<aside>`, `<main>`, `<section>`, `<fieldset>`, `<dialog>`), full W3C ARIA tab, radiogroup, and dialog patterns.
 - **CSS3**: CSS Custom Properties (Design Tokens) for seamless light/dark theming, CSS Grid, Flexbox, 3D perspective transforms (`rotateY`), and `@media (prefers-reduced-motion)` support.
 - **Vanilla JavaScript (ES6+)**: Pure standard modular JavaScript with strict separation of concerns, native Fetch API, `AbortController` timeouts, Blob/Clipboard APIs, and safe text injection (`textContent` and HTML escaping).
-- **Google Gemini API**: Uses the official REST endpoint `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent` with `responseMimeType: "application/json"`.
+- **Google Gemini API**: Uses the official REST endpoint `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent` with `responseMimeType: "application/json"`.
 - **System Font Stack**: High-performance system fonts (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto...`) eliminating external network delays.
 - **Native Inline SVGs**: Scalable vector icons embedded directly into HTML/CSS without external icon CDNs (e.g., FontAwesome, Lucide).
 
@@ -77,7 +77,7 @@ To generate dynamic study materials from your own custom notes:
 ### 2. Enter and Save the Key in StudyMate AI
 1. In the application sidebar or mobile menu, navigate to **Settings**.
 2. Under **AI Provider Configuration**, paste your API key into the **Gemini API Key** field.
-3. Click **Save API Key**. The key is securely saved to your browser's `localStorage` (`studymate_api_key`) and the configuration status badge updates to **Configured (Gemini 1.5 Flash)**.
+3. Click **Save API Key**. The key is securely saved to your browser's `localStorage` (`studymate_api_key`) and the configuration status badge updates to **Configured (Gemini 3.5 Flash-Lite)**.
 4. Click **Test Connection** to immediately verify your key against Google Gemini. A green confirmation banner indicates that the model is ready.
 
 ### 3. Security Considerations
@@ -103,7 +103,7 @@ To generate dynamic study materials from your own custom notes:
 5. **Click "Generate with AI"**:
    - JavaScript validates note length and verifies API key configuration.
    - The button enters a loading state (`Generating with AI...` with animated spinner).
-   - An asynchronous POST request is dispatched to Google Gemini (`gemini-1.5-flash`).
+   - An asynchronous POST request is dispatched to Google Gemini (`gemini-3.5-flash-lite`).
    - The JSON response is parsed, validated, and normalized into application state.
    - The workspace smoothly scrolls into view with active **Summary**, **Quiz**, and **Flashcards** tabs.
 
@@ -118,7 +118,7 @@ To generate dynamic study materials from your own custom notes:
 
 ### A. Summary Tab
 - **Structured Reading**: Executive overview, formatted paragraphs, key takeaways with checkmark indicators, and core concept definition cards.
-- **Source Badge**: Identifies whether the material was generated via `AI Generated (Gemini 1.5 Flash)` or `Demo Mode`.
+- **Source Badge**: Identifies whether the material was generated via `AI Generated (Gemini 3.5 Flash-Lite)` or `Demo Mode`.
 - **Copy Summary**: Extracts formatted plain text and copies it to the system clipboard using `navigator.clipboard.writeText` (with an automatic fallback for restricted environments).
 - **Download Summary**: Generates a downloadable text file (`[topic]-summary.txt`) using the HTML5 `Blob` and `URL.createObjectURL` APIs.
 
@@ -160,7 +160,7 @@ StudyMate AI includes extensive error handling to guarantee a smooth user experi
 | :--- | :--- |
 | **Missing API Key** | Modal dialog guides the user to Settings or offers to use Demo Mode. No silent errors. |
 | **Invalid API Key (HTTP 400)** | Clear error alert directing the user to verify their key at `aistudio.google.com`. |
-| **Permission Denied (HTTP 403)** | Explains that the key lacks permission for the `gemini-1.5-flash` model. |
+| **Permission Denied (HTTP 403)** | Explains that the key lacks permission for the `gemini-3.5-flash-lite` model. |
 | **Rate Limit / Quota (HTTP 429)** | Alerts user that Google AI Studio free tier quota was reached and advises waiting. |
 | **Network Timeout (60s)** | AbortController terminates slow requests and notifies user of connection timeout. |
 | **Malformed AI Response** | Strict schema validator catches incomplete JSON and displays diagnostic details. |
@@ -174,5 +174,5 @@ StudyMate AI includes extensive error handling to guarantee a smooth user experi
 | :--- | :--- | :---: | :--- |
 | **Phase 1** | **Project Foundation & UI Development** | **Completed** | Full responsive layout, design system, theme switching, accessible tabs, character counting, and validation. |
 | **Phase 2** | **Study Material Generation & Interactive Learning** | **Completed** | Sample study material generator, summary copy/download, 5-question multi-choice quiz engine, 3D flashcards with mastery tracking. |
-| **Phase 3** | **Google Gemini AI Integration** | **Completed** | Live client-side connection to Google Gemini API (`gemini-1.5-flash`), key management, connection testing, schema validation, and error handling. |
+| **Phase 3** | **Google Gemini AI Integration** | **Completed** | Live client-side connection to Google Gemini API (`gemini-3.5-flash-lite`), key management, connection testing, schema validation, and error handling. |
 | **Phase 4** | **History & Learning Analytics** | *Scheduled Next* | LocalStorage persistence engine, searchable study history, score trend charts, and export tools. |

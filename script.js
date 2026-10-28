@@ -13,12 +13,12 @@
    ============================================================================ */
 
 /**
- * Official Google Gemini 1.5 Flash Configuration.
+ * Official Google Gemini 3.5 Flash-Lite Configuration.
  * Endpoint utilizes Google AI Studio API key query parameter format.
  */
 const GEMINI_CONFIG = {
   provider: 'gemini',
-  model: 'gemini-1.5-flash',
+  model: 'gemini-3.5-flash-lite',
   baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
   requestTimeoutMs: 60000,
   maxOutputTokens: 8192,
@@ -1485,7 +1485,7 @@ function validateStudyInput() {
    ============================================================================ */
 
 /**
- * Builds a structured, strict prompt instructing Google Gemini 1.5 Flash
+ * Builds a structured, strict prompt instructing Google Gemini 3.5 Flash-Lite
  * to transform notes into summaries, quizzes, and flashcards formatted as JSON.
  * @param {string} topic 
  * @param {string} notes 
@@ -1784,7 +1784,7 @@ async function requestStudyMaterial(topic, notes, difficulty, summaryStyle, apiK
       case 403:
         throw new Error(`API key authorization failed (HTTP ${response.status})${errDetail}. Ensure your Google Gemini key has active permissions.`);
       case 404:
-        throw new Error(`Gemini model endpoint not found (HTTP 404)${errDetail}.`);
+        throw new Error(`Gemini model endpoint not found (HTTP 404)${errDetail}. The model gemini-3.5-flash-lite was not found.`);
       case 429:
         throw new Error(`Gemini rate limit or quota exceeded (HTTP 429)${errDetail}. Please wait a moment before trying again.`);
       case 500:
@@ -2163,7 +2163,7 @@ function renderSummary() {
   const sourceBadge = document.createElement('span');
   sourceBadge.className = 'badge badge-accent';
   if (mat.isAI) {
-    sourceBadge.textContent = 'AI Generated (Gemini 1.5 Flash)';
+    sourceBadge.textContent = 'AI Generated (Gemini 3.5 Flash-Lite)';
   } else {
     sourceBadge.textContent = mat.isGenericDemo
       ? 'Demo Mode — General Demonstration Dataset'
@@ -2324,7 +2324,7 @@ function buildPlainTextSummary() {
   text += `STUDYMATE AI — STUDY SUMMARY: ${mat.displayTitle.toUpperCase()}\n`;
   text += `Format Style: ${mat.style} | Difficulty Level: ${mat.difficulty}\n`;
   const sourceLabel = mat.isAI
-    ? 'Google Gemini 1.5 Flash (Live AI Generation)'
+    ? 'Google Gemini 3.5 Flash-Lite (gemini-3.5-flash-lite) [Live AI Generation]'
     : (mat.isGenericDemo ? 'General Demonstration Dataset' : 'Curated Study Dataset');
   text += `Source: ${sourceLabel}\n`;
   text += `${divider}\n\n`;
@@ -3422,7 +3422,7 @@ function updateAIConfigStatus() {
 
   const key = getAPIKey();
   if (key) {
-    badge.textContent = 'Configured (Gemini 1.5 Flash)';
+    badge.textContent = 'Configured (Gemini 3.5 Flash-Lite)';
     badge.className = 'badge badge-success';
   } else {
     badge.textContent = 'Not Configured';
@@ -3467,7 +3467,7 @@ async function testAPIConnection() {
     feedbackEl.className = 'connection-feedback-alert';
     feedbackEl.innerHTML = `
       <span class="btn-spinner" aria-hidden="true"></span>
-      <span>Connecting to Google Gemini API (gemini-1.5-flash)...</span>
+      <span>Connecting to Google Gemini API (gemini-3.5-flash-lite)...</span>
     `;
     feedbackEl.removeAttribute('hidden');
   }
@@ -3497,7 +3497,7 @@ async function testAPIConnection() {
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
             <polyline points="22 4 12 14.01 9 11.01"></polyline>
           </svg>
-          <span>Connection successful! Google Gemini 1.5 Flash is ready to generate study materials.</span>
+          <span>Connection successful! Google Gemini 3.5 Flash-Lite (gemini-3.5-flash-lite) is ready to generate study materials.</span>
         `;
       }
       showToast('API Connection verified successfully', 'success');
@@ -3514,7 +3514,9 @@ async function testAPIConnection() {
       if (response.status === 400) {
         userMsg = 'API key invalid or unrecognized (HTTP 400). Please check your key at aistudio.google.com.';
       } else if (response.status === 403) {
-        userMsg = 'Access forbidden (HTTP 403). Your key does not have permission to access Gemini 1.5 Flash.';
+        userMsg = 'Access forbidden (HTTP 403). Your key does not have permission to access Gemini 3.5 Flash-Lite (gemini-3.5-flash-lite).';
+      } else if (response.status === 404) {
+        userMsg = 'Model endpoint not found (HTTP 404). Gemini 3.5 Flash-Lite (gemini-3.5-flash-lite) is unavailable.';
       } else if (response.status === 429) {
         userMsg = 'Rate limit or quota exceeded (HTTP 429). Please check your Google AI Studio quota.';
       }
