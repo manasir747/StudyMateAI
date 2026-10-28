@@ -116,12 +116,12 @@
         <div class="system-status-card">
           <div class="status-indicator">
             <span class="status-dot"></span>
-            <span class="status-text">Phase 2: Study Engine</span>
+            <span class="status-text">Phase 3: AI Connected</span>
           </div>
-          <p class="status-subtext">Interactive Learning Active</p>
+          <p class="status-subtext">Google Gemini Engine</p>
           <div class="system-badge-row">
-            <span class="badge badge-accent">Vanilla JS</span>
-            <span class="badge badge-subtle">v2.0.0</span>
+            <span class="badge badge-accent">Gemini 1.5 Flash</span>
+            <span class="badge badge-subtle">v3.0.0</span>
           </div>
         </div>
       </div>
@@ -410,7 +410,15 @@
                   <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 2l2.4 7.4 7.6.6-5.8 5 1.8 7.5L12 18.5 6 22.5l1.8-7.5-5.8-5 7.6-.6z"></path>
                   </svg>
-                  <span>Generate Study Material</span>
+                  <span id="btn-generate-text">Generate with AI</span>
+                </button>
+
+                <button type="button" id="btn-demo-mode" class="btn btn-secondary" title="Explore study tools using curated sample data without an API key">
+                  <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                  </svg>
+                  <span>Try Demo Mode</span>
                 </button>
 
                 <button type="button" id="btn-clear-input" class="btn btn-secondary">
@@ -432,7 +440,7 @@
                 <p class="card-description">Toggle between your generated summary, practice quiz, and flashcards.</p>
               </div>
               <div class="workspace-phase-badge">
-                <span class="badge badge-accent" id="workspace-stage-badge">Phase 2: Interactive Study Engine</span>
+                <span class="badge badge-accent" id="workspace-stage-badge">Phase 3: Live AI Integration</span>
               </div>
             </div>
 
@@ -848,11 +856,17 @@
                   </svg>
                 </div>
                 <div class="callout-body">
-                  <h4 class="callout-title">Phase 1 Notice: AI Connection Inactive</h4>
+                  <h4 class="callout-title">Phase 3 Active: Google Gemini API Integration</h4>
                   <p class="callout-text">
-                    StudyMate AI frontend is currently in Phase 1 (UI Foundation). Real API integration with Google Gemini will be connected during Phase 3. No live requests are made at this stage.
+                    StudyMate AI connects directly to Google Gemini (model: <code>gemini-1.5-flash</code>) to transform raw notes into structured summaries, 5-question quizzes, and flashcards via secure client-side fetch requests.
                   </p>
                 </div>
+              </div>
+
+              <!-- Configuration Status Row -->
+              <div class="ai-status-row">
+                <span class="ai-status-label">Configuration Status:</span>
+                <span id="ai-config-status-badge" class="badge badge-subtle">Checking...</span>
               </div>
 
               <!-- Security warning banner -->
@@ -876,10 +890,9 @@
               <div class="settings-form-group">
                 <label for="ai-provider-select" class="form-label">AI Model Provider</label>
                 <select id="ai-provider-select" class="form-control">
-                  <option value="gemini" selected>Google Gemini (Recommended — Gemini 1.5 Flash)</option>
-                  <option value="custom" disabled>Custom Endpoint (Phase 3)</option>
+                  <option value="gemini" selected>Google Gemini (Official — Gemini 1.5 Flash)</option>
                 </select>
-                <span class="field-help-text">Google Gemini provides high-speed contextual comprehension suitable for educational summarization.</span>
+                <span class="field-help-text">Google Gemini provides high-speed structured JSON generation suitable for educational materials.</span>
               </div>
 
               <div class="settings-form-group">
@@ -906,9 +919,10 @@
                     </svg>
                   </button>
                 </div>
-                <span class="field-help-text">Obtain a free developer key from Google AI Studio (ai.google.dev). Real validation occurs in Phase 3.</span>
+                <span class="field-help-text">Obtain a free developer key from Google AI Studio (aistudio.google.com).</span>
               </div>
 
+              <!-- Action Buttons Row -->
               <div class="btn-group-row">
                 <button type="button" id="btn-save-key" class="btn btn-primary">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -918,10 +932,21 @@
                   </svg>
                   <span>Save API Key</span>
                 </button>
+
+                <button type="button" id="btn-test-connection" class="btn btn-secondary">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                  </svg>
+                  <span id="btn-test-text">Test Connection</span>
+                </button>
+
                 <button type="button" id="btn-remove-key" class="btn btn-secondary">
                   <span>Remove Key</span>
                 </button>
               </div>
+
+              <!-- Connection test feedback alert -->
+              <div id="connection-test-feedback" class="connection-feedback-alert" role="status" aria-live="polite" hidden></div>
             </div>
 
             <!-- B. Appearance Theme Card -->
@@ -1179,22 +1204,22 @@
                   <span class="step-status status-complete">✓ Completed</span>
                 </div>
 
-                <div class="roadmap-step roadmap-step-current">
-                  <div class="step-badge">Phase 2 • Current</div>
+                <div class="roadmap-step">
+                  <div class="step-badge">Phase 2 • Milestone</div>
                   <h4 class="step-title">Study Workspace Engine</h4>
                   <p class="step-desc">
                     Interactive sample data generation, summary downloads/copies, 5-question multi-choice quiz engine, and 3D flashcard decks.
                   </p>
-                  <span class="step-status status-complete">✓ Active & Implemented</span>
+                  <span class="step-status status-complete">✓ Completed</span>
                 </div>
 
-                <div class="roadmap-step">
-                  <div class="step-badge">Phase 3 • Upcoming</div>
+                <div class="roadmap-step roadmap-step-current">
+                  <div class="step-badge">Phase 3 • Current</div>
                   <h4 class="step-title">Google Gemini Integration</h4>
                   <p class="step-desc">
-                    Live client-side connection to Google Gemini API for automated note extraction, question generation, and prompt engineering.
+                    Live client-side connection to Google Gemini API (gemini-1.5-flash), prompt engineering, structured JSON validation, and connection testing.
                   </p>
-                  <span class="step-status">Scheduled Next</span>
+                  <span class="step-status status-complete">✓ Active & Implemented</span>
                 </div>
 
                 <div class="roadmap-step">

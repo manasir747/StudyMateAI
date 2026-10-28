@@ -1,12 +1,29 @@
 /**
  * ============================================================================
- * StudyMate AI — Phase 2: Study Material Generation & Interactive Learning
+ * StudyMate AI — Phase 3: AI API Integration & Response Validation
  * Pure Vanilla JavaScript (ES6+)
  * Strictly Zero External Frameworks, Libraries, or Dependencies
  * ============================================================================
  */
 
 'use strict';
+
+/* ============================================================================
+   0. AI PROVIDER CONFIGURATION (GOOGLE GEMINI)
+   ============================================================================ */
+
+/**
+ * Official Google Gemini 1.5 Flash Configuration.
+ * Endpoint utilizes Google AI Studio API key query parameter format.
+ */
+const GEMINI_CONFIG = {
+  provider: 'gemini',
+  model: 'gemini-1.5-flash',
+  baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+  requestTimeoutMs: 60000,
+  maxOutputTokens: 8192,
+  temperature: 0.3
+};
 
 /* ============================================================================
    1. SAMPLE STUDY-MATERIAL DATASETS (LOCAL PREDEFINED KNOWLEDGE BASE)
@@ -1015,6 +1032,7 @@ const AppState = {
     flashcardAnimation: 'flip'
   },
   apiKey: '',
+  apiKeyConfigured: false,
   isGenerating: false,
 
   // In-memory session statistics (Starts at 0, updated in real time)
@@ -1075,7 +1093,8 @@ const SECTION_METADATA = {
 
 const STORAGE_KEYS = {
   THEME: 'studymate_theme',
-  PREFERENCES: 'studymate_preferences'
+  PREFERENCES: 'studymate_preferences',
+  API_KEY: 'studymate_api_key'
 };
 
 /* ============================================================================
@@ -1462,18 +1481,340 @@ function validateStudyInput() {
 }
 
 /* ============================================================================
-   9. SAMPLE MATERIAL SELECTION & GENERATION ENGINE
+   9. AI INTEGRATION & STUDY MATERIAL GENERATION ENGINE
    ============================================================================ */
+
+/**
+ * Builds a structured, strict prompt instructing Google Gemini 1.5 Flash
+ * to transform notes into summaries, quizzes, and flashcards formatted as JSON.
+ * @param {string} topic 
+ * @param {string} notes 
+ * @param {string} difficulty 
+ * @param {string} summaryStyle 
+ * @returns {string}
+ */
+function buildStudyPrompt(topic, notes, difficulty, summaryStyle) {
+  const effectiveTopic = (topic && topic.trim()) ? topic.trim() : 'Core Notes Overview';
+
+  return `You are StudyMate AI, an expert educational tutor and curriculum designer.
+Analyze the student notes provided below and generate comprehensive, high-quality study materials strictly following the specified parameters.
+
+### INPUT PARAMETERS:
+- Topic: ${effectiveTopic}
+- Quiz Difficulty Level: ${difficulty}
+- Summary Style: ${summaryStyle}
+
+### STUDENT NOTES:
+"""
+${notes.trim()}
+"""
+
+### REQUIREMENTS:
+1. SUMMARY:
+   - "paragraphs": Array of 3 to 5 coherent, well-structured paragraphs explaining the topic based on the student's notes, written strictly in the requested style:
+     * Simple Explanation: intuitive analogies, relatable metaphors, and clear plain-language descriptions.
+     * Exam-Focused: high-yield facts, bullet-points embedded in sentences, formulas, and critical test takeaways.
+     * Detailed Notes: in-depth academic rigor, foundational principles, mechanisms, and thorough context.
+   - "takeaways": Array of 4 to 6 concise, high-impact key takeaways.
+   - "concepts": Array of 3 to 6 key terms and definitions formatted as objects: [{"term": "...", "definition": "..."}].
+
+2. MULTIPLE-CHOICE QUIZ:
+   - "quiz": Array of EXACTLY 5 multiple-choice questions matching the requested "${difficulty}" difficulty level:
+     * Easy: foundational recall, core terms, direct definitions.
+     * Medium: application, distinctions, understanding cause-and-effect.
+     * Hard: analytical reasoning, edge cases, synthesis, nuanced distinctions.
+   - Each question must be an object with:
+     * "id": integer (1 to 5)
+     * "question": string with the question prompt
+     * "options": array of EXACTLY 4 plausible strings
+     * "correctIndex": integer between 0 and 3 indicating the index of the correct option
+     * "explanation": clear educational explanation of why the correct option is right and the others are incorrect.
+
+3. FLASHCARDS:
+   - "flashcards": Array of AT LEAST 6 interactive flashcards for active recall and spaced repetition.
+   - Each flashcard must be an object with:
+     * "id": integer (1 to n)
+     * "front": concise prompt, question, or term
+     * "back": accurate, clear answer or explanation
+
+### OUTPUT FORMAT:
+Output MUST be valid JSON and NOTHING ELSE. Do not include markdown code fences (like \`\`\`json). Return ONLY the raw JSON object conforming to this schema:
+{
+  "title": "${effectiveTopic}",
+  "summary": {
+    "paragraphs": ["..."],
+    "takeaways": ["..."],
+    "concepts": [{"term": "...", "definition": "..."}]
+  },
+  "quiz": [
+    {
+      "id": 1,
+      "question": "...",
+      "options": ["...", "...", "...", "..."],
+      "correctIndex": 0,
+      "explanation": "..."
+    }
+  ],
+  "flashcards": [
+    {
+      "id": 1,
+      "front": "...",
+      "back": "..."
+    }
+  ]
+}`;
+}
+
+/**
+ * Extracts raw text from Gemini API response candidates.
+ * @param {Object} data 
+ * @returns {string}
+ */
+function extractGeminiResponse(data) {
+  if (!data || !data.candidates || !data.candidates.length) {
+    if (data && data.promptFeedback && data.promptFeedback.blockReason) {
+      throw new Error(`Content was blocked by safety filters: ${data.promptFeedback.blockReason}`);
+    }
+    throw new Error('No response candidates returned by Gemini API.');
+  }
+
+  const candidate = data.candidates[0];
+  if (candidate.finishReason && candidate.finishReason !== 'STOP' && candidate.finishReason !== 'MAX_TOKENS') {
+    if (candidate.finishReason === 'SAFETY') {
+      throw new Error('Generation stopped due to Gemini safety policies.');
+    }
+  }
+
+  const parts = candidate.content && candidate.content.parts;
+  if (!parts || !parts.length || !parts[0].text) {
+    throw new Error('Gemini API returned an empty text response.');
+  }
+
+  return parts[0].text;
+}
+
+/**
+ * Parses raw AI response text, stripping markdown code fences if present.
+ * @param {string} rawText 
+ * @returns {Object}
+ */
+function parseStudyMaterialJSON(rawText) {
+  let cleaned = rawText.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+      } catch (innerErr) {
+        throw new Error('Failed to parse AI response as valid JSON: ' + err.message);
+      }
+    }
+    throw new Error('Failed to parse AI response as valid JSON: ' + err.message);
+  }
+}
+
+/**
+ * Validates the schema and completeness of parsed AI study material.
+ * Ensures summary paragraphs, 5 quiz questions with 4 options each, and at least 6 flashcards.
+ * @param {Object} data 
+ * @returns {Object} Validated and normalized data
+ */
+function validateStudyMaterial(data) {
+  if (!data || typeof data !== 'object') {
+    throw new Error('AI response structure is not a valid JSON object.');
+  }
+
+  if (!data.title || typeof data.title !== 'string') {
+    data.title = 'AI Study Notes';
+  }
+
+  if (!data.summary || typeof data.summary !== 'object') {
+    throw new Error('AI response is missing the required "summary" section.');
+  }
+
+  if (!Array.isArray(data.summary.paragraphs) || data.summary.paragraphs.length === 0) {
+    throw new Error('AI response is missing summary paragraphs.');
+  }
+
+  data.summary.paragraphs = data.summary.paragraphs.map(p => String(p).trim()).filter(Boolean);
+  if (data.summary.paragraphs.length === 0) {
+    throw new Error('Summary paragraphs are empty.');
+  }
+
+  if (!Array.isArray(data.summary.takeaways) || data.summary.takeaways.length === 0) {
+    throw new Error('AI response is missing key takeaways.');
+  }
+  data.summary.takeaways = data.summary.takeaways.map(t => String(t).trim()).filter(Boolean);
+
+  if (Array.isArray(data.summary.concepts)) {
+    data.summary.concepts = data.summary.concepts
+      .filter(c => c && typeof c === 'object' && c.term && c.definition)
+      .map(c => ({ term: String(c.term).trim(), definition: String(c.definition).trim() }));
+  } else {
+    data.summary.concepts = [];
+  }
+
+  if (!Array.isArray(data.quiz) || data.quiz.length < 5) {
+    throw new Error(`AI generated an incomplete quiz (${data.quiz ? data.quiz.length : 0}/5 questions).`);
+  }
+
+  const validatedQuiz = [];
+  for (let i = 0; i < 5; i++) {
+    const q = data.quiz[i];
+    if (!q || typeof q !== 'object') {
+      throw new Error(`Quiz question ${i + 1} is invalid.`);
+    }
+    if (!q.question || typeof q.question !== 'string') {
+      throw new Error(`Quiz question ${i + 1} is missing a question prompt.`);
+    }
+    if (!Array.isArray(q.options) || q.options.length !== 4) {
+      throw new Error(`Quiz question ${i + 1} must have exactly 4 options.`);
+    }
+    const correctIdx = Number(q.correctIndex);
+    if (isNaN(correctIdx) || correctIdx < 0 || correctIdx > 3 || !Number.isInteger(correctIdx)) {
+      throw new Error(`Quiz question ${i + 1} has an invalid answer index (${q.correctIndex}). Must be 0, 1, 2, or 3.`);
+    }
+
+    validatedQuiz.push({
+      id: i + 1,
+      question: String(q.question).trim(),
+      options: q.options.map(opt => String(opt).trim()),
+      correctIndex: correctIdx,
+      explanation: q.explanation ? String(q.explanation).trim() : 'Correct answer verified from reference notes.'
+    });
+  }
+  data.quiz = validatedQuiz;
+
+  if (!Array.isArray(data.flashcards) || data.flashcards.length < 6) {
+    throw new Error(`AI generated fewer than 6 flashcards (${data.flashcards ? data.flashcards.length : 0} returned).`);
+  }
+
+  const validatedCards = [];
+  for (let i = 0; i < data.flashcards.length; i++) {
+    const c = data.flashcards[i];
+    if (!c || typeof c !== 'object') continue;
+    const front = c.front ? String(c.front).trim() : '';
+    const back = c.back ? String(c.back).trim() : '';
+    if (front && back) {
+      validatedCards.push({
+        id: i + 1,
+        front,
+        back
+      });
+    }
+  }
+
+  if (validatedCards.length < 6) {
+    throw new Error(`Only ${validatedCards.length} valid flashcards generated; at least 6 required.`);
+  }
+  data.flashcards = validatedCards;
+
+  return data;
+}
+
+/**
+ * Dispatches an asynchronous request to Google Gemini API with timeout and error handling.
+ * @param {string} topic 
+ * @param {string} notes 
+ * @param {string} difficulty 
+ * @param {string} summaryStyle 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} Validated study material object
+ */
+async function requestStudyMaterial(topic, notes, difficulty, summaryStyle, apiKey) {
+  const prompt = buildStudyPrompt(topic, notes, difficulty, summaryStyle);
+  const endpoint = `${GEMINI_CONFIG.baseUrl}/${GEMINI_CONFIG.model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const requestBody = {
+    contents: [
+      {
+        parts: [{ text: prompt }]
+      }
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: GEMINI_CONFIG.temperature,
+      maxOutputTokens: GEMINI_CONFIG.maxOutputTokens
+    }
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GEMINI_CONFIG.requestTimeoutMs);
+
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('AI request timed out after 60 seconds. Please check your network connection or try shorter notes.');
+    }
+    throw new Error(`Network error connecting to Gemini API: ${err.message || 'Check your connection'}`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    let errDetail = '';
+    try {
+      const errJson = await response.json();
+      if (errJson && errJson.error && errJson.error.message) {
+        errDetail = `: ${errJson.error.message}`;
+      }
+    } catch (_) {}
+
+    switch (response.status) {
+      case 400:
+        throw new Error(`Invalid request or invalid API key (HTTP 400)${errDetail}. Please verify your key at aistudio.google.com.`);
+      case 401:
+      case 403:
+        throw new Error(`API key authorization failed (HTTP ${response.status})${errDetail}. Ensure your Google Gemini key has active permissions.`);
+      case 404:
+        throw new Error(`Gemini model endpoint not found (HTTP 404)${errDetail}.`);
+      case 429:
+        throw new Error(`Gemini rate limit or quota exceeded (HTTP 429)${errDetail}. Please wait a moment before trying again.`);
+      case 500:
+      case 503:
+        throw new Error(`Gemini service temporarily unavailable (HTTP ${response.status})${errDetail}. Please retry shortly.`);
+      default:
+        throw new Error(`Gemini API request failed with status ${response.status}${errDetail}`);
+    }
+  }
+
+  const responseData = await response.json();
+  const rawText = extractGeminiResponse(responseData);
+  const parsed = parseStudyMaterialJSON(rawText);
+  return validateStudyMaterial(parsed);
+}
 
 function initializeStudyForm() {
   const form = document.getElementById('study-input-form');
   const clearBtn = document.getElementById('btn-clear-input');
+  const demoBtn = document.getElementById('btn-demo-mode');
 
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       handleGenerateClick();
     });
+  }
+
+  if (demoBtn) {
+    demoBtn.addEventListener('click', handleDemoModeClick);
   }
 
   if (clearBtn) {
@@ -1523,9 +1864,149 @@ function getSampleStudyMaterial(topicText, notesText) {
 }
 
 /**
- * Handles generating study materials from sample datasets.
+ * Primary generation handler using live Google Gemini AI.
+ * Validates inputs, verifies API key, triggers fetch, and renders results.
  */
-function handleGenerateClick() {
+async function handleGenerateClick() {
+  if (AppState.isGenerating) return;
+
+  const isValid = validateStudyInput();
+  if (!isValid) return;
+
+  const apiKey = getAPIKey();
+  if (!apiKey) {
+    showModal({
+      title: 'Gemini API Key Required',
+      message: 'To generate live study materials using Google Gemini, please enter your API key in Settings.\n\nYou can also click "Try Demo Mode" on the dashboard to test the app immediately with sample data.',
+      confirmText: 'Go to Settings',
+      cancelText: 'Stay on Dashboard',
+      iconType: 'info',
+      onConfirm: () => {
+        switchSection('settings');
+        const keyInput = document.getElementById('api-key-input');
+        if (keyInput) keyInput.focus();
+      }
+    });
+    return;
+  }
+
+  const topicInput = document.getElementById('topic-input');
+  const notesInput = document.getElementById('notes-input');
+  const userTopic = topicInput && topicInput.value.trim() ? topicInput.value.trim() : '';
+  const userNotes = notesInput ? notesInput.value.trim() : '';
+
+  const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked');
+  const difficulty = selectedDifficulty ? selectedDifficulty.value : AppState.preferences.defaultDifficulty;
+
+  const selectedStyle = document.querySelector('input[name="summaryStyle"]:checked');
+  const summaryStyle = selectedStyle ? selectedStyle.value : AppState.preferences.defaultSummaryStyle;
+
+  // Set loading state
+  AppState.isGenerating = true;
+  const generateBtn = document.getElementById('btn-generate');
+  const generateText = document.getElementById('btn-generate-text');
+  const demoBtn = document.getElementById('btn-demo-mode');
+
+  let spinnerEl = null;
+  if (generateBtn) {
+    generateBtn.disabled = true;
+    spinnerEl = document.createElement('span');
+    spinnerEl.className = 'btn-spinner';
+    spinnerEl.setAttribute('aria-hidden', 'true');
+    generateBtn.prepend(spinnerEl);
+  }
+  if (generateText) {
+    generateText.textContent = 'Generating with AI...';
+  }
+  if (demoBtn) {
+    demoBtn.disabled = true;
+  }
+
+  try {
+    const validatedData = await requestStudyMaterial(userTopic, userNotes, difficulty, summaryStyle, apiKey);
+
+    // Set Active Material
+    AppState.activeMaterial = {
+      id: 'ai-' + Date.now(),
+      displayTitle: validatedData.title || (userTopic || 'Study Notes'),
+      baseTitle: validatedData.title || (userTopic || 'Study Notes'),
+      category: 'AI Generated',
+      difficulty: difficulty,
+      style: summaryStyle,
+      isAI: true,
+      isGenericDemo: false,
+      summaryParagraphs: validatedData.summary.paragraphs,
+      takeaways: validatedData.summary.takeaways,
+      concepts: validatedData.summary.concepts || []
+    };
+
+    // Set Active Quiz
+    AppState.quiz = {
+      questions: validatedData.quiz.map(q => ({ ...q })),
+      currentIndex: 0,
+      selectedAnswers: [null, null, null, null, null],
+      isSubmitted: false,
+      score: null,
+      attemptRecorded: false
+    };
+
+    // Set Active Flashcards
+    AppState.flashcards = {
+      deck: validatedData.flashcards.map(c => ({ ...c })),
+      currentIndex: 0,
+      isFlipped: false,
+      classifications: {}
+    };
+
+    // Update Statistics
+    AppState.stats.sessionsCount += 1;
+    updateDashboardStats();
+
+    // Render Views
+    renderSummary();
+    renderQuiz();
+    renderFlashcards();
+
+    // Switch to Summary Tab
+    switchTabByName('summary');
+
+    showToast('AI study material generated successfully!', 'success');
+
+    // Scroll workspace into view
+    const workspaceCard = document.querySelector('.workspace-card');
+    if (workspaceCard) {
+      workspaceCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } catch (err) {
+    console.error('AI Generation Error:', err);
+    showModal({
+      title: 'AI Generation Failed',
+      message: err.message || 'An unexpected error occurred while communicating with Google Gemini.',
+      confirmText: 'Review Settings',
+      cancelText: 'Dismiss',
+      isDanger: false,
+      iconType: 'warning',
+      onConfirm: () => {
+        switchSection('settings');
+      }
+    });
+    showToast(err.message || 'AI Generation failed', 'error');
+  } finally {
+    AppState.isGenerating = false;
+    if (spinnerEl && spinnerEl.parentNode) {
+      spinnerEl.parentNode.removeChild(spinnerEl);
+    }
+    if (generateBtn) generateBtn.disabled = false;
+    if (generateText) generateText.textContent = 'Generate with AI';
+    if (demoBtn) demoBtn.disabled = false;
+  }
+}
+
+/**
+ * Explicit demo mode handler using curated local sample datasets.
+ * Does not require an API key or active network connection.
+ */
+function handleDemoModeClick() {
   if (AppState.isGenerating) return;
 
   const isValid = validateStudyInput();
@@ -1555,6 +2036,7 @@ function handleGenerateClick() {
     category: dataset.category,
     difficulty: difficulty,
     style: summaryStyle,
+    isAI: false,
     isGenericDemo: dataset.isGenericDemo,
     summaryParagraphs: dataset.summaries[summaryStyle] || dataset.summaries['Simple Explanation'],
     takeaways: dataset.takeaways,
@@ -1593,7 +2075,7 @@ function handleGenerateClick() {
   switchTabByName('summary');
 
   // Notify user
-  showToast('Study material ready.', 'success');
+  showToast('Loaded sample study material (Demo Mode).', 'info');
 
   AppState.isGenerating = false;
 
@@ -1678,12 +2160,16 @@ function renderSummary() {
   const metaBadges = document.createElement('div');
   metaBadges.className = 'summary-meta-badges';
 
-  const demoBadge = document.createElement('span');
-  demoBadge.className = 'badge badge-accent';
-  demoBadge.textContent = mat.isGenericDemo
-    ? 'Demo Mode — General Demonstration Dataset'
-    : 'Demo Mode — Sample Study Material';
-  metaBadges.appendChild(demoBadge);
+  const sourceBadge = document.createElement('span');
+  sourceBadge.className = 'badge badge-accent';
+  if (mat.isAI) {
+    sourceBadge.textContent = 'AI Generated (Gemini 1.5 Flash)';
+  } else {
+    sourceBadge.textContent = mat.isGenericDemo
+      ? 'Demo Mode — General Demonstration Dataset'
+      : 'Demo Mode — Sample Study Material';
+  }
+  metaBadges.appendChild(sourceBadge);
 
   const styleBadge = document.createElement('span');
   styleBadge.className = 'badge badge-subtle';
@@ -1837,7 +2323,10 @@ function buildPlainTextSummary() {
   text += `${divider}\n`;
   text += `STUDYMATE AI — STUDY SUMMARY: ${mat.displayTitle.toUpperCase()}\n`;
   text += `Format Style: ${mat.style} | Difficulty Level: ${mat.difficulty}\n`;
-  text += `Source: ${mat.isGenericDemo ? 'General Demonstration Dataset' : 'Curated Study Dataset'}\n`;
+  const sourceLabel = mat.isAI
+    ? 'Google Gemini 1.5 Flash (Live AI Generation)'
+    : (mat.isGenericDemo ? 'General Demonstration Dataset' : 'Curated Study Dataset');
+  text += `Source: ${sourceLabel}\n`;
   text += `${divider}\n\n`;
 
   text += `EXECUTIVE SUMMARY:\n`;
@@ -2730,51 +3219,25 @@ function initializeSettings() {
     });
   }
 
-  // 2. API Key Save and Remove
+  // 2. API Key Save, Remove, and Test Connection
   const saveKeyBtn = document.getElementById('btn-save-key');
   const removeKeyBtn = document.getElementById('btn-remove-key');
+  const testKeyBtn = document.getElementById('btn-test-connection');
 
   if (saveKeyBtn) {
-    saveKeyBtn.addEventListener('click', () => {
-      const keyVal = apiKeyInput ? apiKeyInput.value.trim() : '';
-      if (!keyVal) {
-        showToast('Please enter an API key before saving', 'warning');
-        return;
-      }
-
-      AppState.apiKey = keyVal;
-      showModal({
-        title: 'API Configuration Staged',
-        message: 'Your Google Gemini API key has been registered in local application state. Active network requests and live validation will be enabled during Phase 3 integration.',
-        confirmText: 'Acknowledge',
-        showCancel: false,
-        iconType: 'info'
-      });
-    });
+    saveKeyBtn.addEventListener('click', saveAPIKeyFromInput);
   }
 
   if (removeKeyBtn) {
-    removeKeyBtn.addEventListener('click', () => {
-      if (!apiKeyInput || !apiKeyInput.value) {
-        showToast('No API key entered to remove', 'info');
-        return;
-      }
-
-      showModal({
-        title: 'Remove API Key?',
-        message: 'Are you sure you want to clear your staged API key from this browser session?',
-        confirmText: 'Remove',
-        cancelText: 'Cancel',
-        isDanger: true,
-        iconType: 'warning',
-        onConfirm: () => {
-          AppState.apiKey = '';
-          if (apiKeyInput) apiKeyInput.value = '';
-          showToast('API key removed from session', 'info');
-        }
-      });
-    });
+    removeKeyBtn.addEventListener('click', removeAPIKeyWithConfirm);
   }
+
+  if (testKeyBtn) {
+    testKeyBtn.addEventListener('click', testAPIConnection);
+  }
+
+  // Restore saved API key state and update badge on load
+  loadSavedAPIKey();
 
   // 3. Appearance Radios
   const themeCardLight = document.getElementById('theme-card-light');
@@ -2833,6 +3296,263 @@ function initializeSettings() {
         }
       });
     });
+  }
+}
+
+/**
+ * Retrieves the currently saved Gemini API key from memory or LocalStorage.
+ * @returns {string}
+ */
+function getAPIKey() {
+  if (AppState.apiKey && AppState.apiKey.trim()) {
+    return AppState.apiKey.trim();
+  }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.API_KEY);
+    if (saved && saved.trim()) {
+      AppState.apiKey = saved.trim();
+      AppState.apiKeyConfigured = true;
+      return saved.trim();
+    }
+  } catch (err) {
+    console.warn('LocalStorage error reading API key:', err);
+  }
+  return '';
+}
+
+/**
+ * Persists the user-provided Gemini API key to LocalStorage.
+ */
+function saveAPIKeyFromInput() {
+  const apiKeyInput = document.getElementById('api-key-input');
+  const keyVal = apiKeyInput ? apiKeyInput.value.trim() : '';
+
+  if (!keyVal) {
+    showToast('Please enter an API key before saving', 'warning');
+    return;
+  }
+
+  if (keyVal.length < 10) {
+    showToast('API key appears too short to be valid', 'warning');
+    return;
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.API_KEY, keyVal);
+  } catch (err) {
+    console.warn('LocalStorage error saving API key:', err);
+  }
+
+  AppState.apiKey = keyVal;
+  AppState.apiKeyConfigured = true;
+  updateAIConfigStatus();
+
+  // Clear previous test feedback
+  const feedbackEl = document.getElementById('connection-test-feedback');
+  if (feedbackEl) {
+    feedbackEl.setAttribute('hidden', '');
+    feedbackEl.innerHTML = '';
+  }
+
+  showToast('Gemini API key saved in browser storage', 'success');
+}
+
+/**
+ * Confirms and removes the stored API key from LocalStorage and AppState.
+ */
+function removeAPIKeyWithConfirm() {
+  const currentKey = getAPIKey();
+  const apiKeyInput = document.getElementById('api-key-input');
+
+  if (!currentKey && (!apiKeyInput || !apiKeyInput.value.trim())) {
+    showToast('No saved API key to remove', 'info');
+    return;
+  }
+
+  showModal({
+    title: 'Remove API Key?',
+    message: 'Are you sure you want to remove your Gemini API key from browser storage? You will need to re-enter it to generate live AI materials.',
+    confirmText: 'Remove Key',
+    cancelText: 'Keep Key',
+    isDanger: true,
+    iconType: 'warning',
+    onConfirm: () => {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.API_KEY);
+      } catch (err) {
+        console.warn('LocalStorage error removing API key:', err);
+      }
+      AppState.apiKey = '';
+      AppState.apiKeyConfigured = false;
+      if (apiKeyInput) apiKeyInput.value = '';
+      updateAIConfigStatus();
+
+      const feedbackEl = document.getElementById('connection-test-feedback');
+      if (feedbackEl) {
+        feedbackEl.setAttribute('hidden', '');
+        feedbackEl.innerHTML = '';
+      }
+
+      showToast('API key removed from storage', 'info');
+    }
+  });
+}
+
+/**
+ * Loads the saved Gemini API key upon initial application startup.
+ */
+function loadSavedAPIKey() {
+  const key = getAPIKey();
+  const apiKeyInput = document.getElementById('api-key-input');
+  if (key) {
+    if (apiKeyInput) apiKeyInput.value = key;
+    AppState.apiKeyConfigured = true;
+  } else {
+    AppState.apiKeyConfigured = false;
+  }
+  updateAIConfigStatus();
+}
+
+/**
+ * Updates the configuration status badge in the Settings panel.
+ */
+function updateAIConfigStatus() {
+  const badge = document.getElementById('ai-config-status-badge');
+  if (!badge) return;
+
+  const key = getAPIKey();
+  if (key) {
+    badge.textContent = 'Configured (Gemini 1.5 Flash)';
+    badge.className = 'badge badge-success';
+  } else {
+    badge.textContent = 'Not Configured';
+    badge.className = 'badge badge-warning';
+  }
+}
+
+/**
+ * Sends a lightweight test ping to the Google Gemini API to verify credentials.
+ */
+async function testAPIConnection() {
+  const apiKeyInput = document.getElementById('api-key-input');
+  const testBtn = document.getElementById('btn-test-connection');
+  const testText = document.getElementById('btn-test-text');
+  const feedbackEl = document.getElementById('connection-test-feedback');
+
+  const keyToTest = (apiKeyInput && apiKeyInput.value.trim()) || getAPIKey();
+
+  if (!keyToTest) {
+    showToast('Please enter an API key to test', 'warning');
+    if (feedbackEl) {
+      feedbackEl.className = 'connection-feedback-alert error';
+      feedbackEl.innerHTML = `
+        <svg class="feedback-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>No API key provided. Enter your Gemini API key from Google AI Studio above.</span>
+      `;
+      feedbackEl.removeAttribute('hidden');
+    }
+    return;
+  }
+
+  // Update UI for testing state
+  if (testBtn) testBtn.disabled = true;
+  if (testText) {
+    testText.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> Testing...';
+  }
+  if (feedbackEl) {
+    feedbackEl.className = 'connection-feedback-alert';
+    feedbackEl.innerHTML = `
+      <span class="btn-spinner" aria-hidden="true"></span>
+      <span>Connecting to Google Gemini API (gemini-1.5-flash)...</span>
+    `;
+    feedbackEl.removeAttribute('hidden');
+  }
+
+  const endpoint = `${GEMINI_CONFIG.baseUrl}/${GEMINI_CONFIG.model}:generateContent?key=${encodeURIComponent(keyToTest)}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'Respond with the single word: OK' }] }],
+        generationConfig: { maxOutputTokens: 5 }
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      if (feedbackEl) {
+        feedbackEl.className = 'connection-feedback-alert success';
+        feedbackEl.innerHTML = `
+          <svg class="feedback-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>Connection successful! Google Gemini 1.5 Flash is ready to generate study materials.</span>
+        `;
+      }
+      showToast('API Connection verified successfully', 'success');
+    } else {
+      let errDetail = '';
+      try {
+        const errJson = await response.json();
+        if (errJson && errJson.error && errJson.error.message) {
+          errDetail = errJson.error.message;
+        }
+      } catch (_) {}
+
+      let userMsg = `Connection failed (HTTP ${response.status}).`;
+      if (response.status === 400) {
+        userMsg = 'API key invalid or unrecognized (HTTP 400). Please check your key at aistudio.google.com.';
+      } else if (response.status === 403) {
+        userMsg = 'Access forbidden (HTTP 403). Your key does not have permission to access Gemini 1.5 Flash.';
+      } else if (response.status === 429) {
+        userMsg = 'Rate limit or quota exceeded (HTTP 429). Please check your Google AI Studio quota.';
+      }
+
+      if (feedbackEl) {
+        feedbackEl.className = 'connection-feedback-alert error';
+        feedbackEl.innerHTML = `
+          <svg class="feedback-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>${escapeHTML(userMsg)}${errDetail ? ` <small style="display:block;margin-top:4px;opacity:0.85;">Details: ${escapeHTML(errDetail)}</small>` : ''}</span>
+        `;
+      }
+      showToast('Connection test failed', 'error');
+    }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    let errMsg = err.name === 'AbortError'
+      ? 'Connection timed out (15s). Please check your internet connection.'
+      : `Network error: ${err.message || 'Failed to reach Google Gemini API'}`;
+
+    if (feedbackEl) {
+      feedbackEl.className = 'connection-feedback-alert error';
+      feedbackEl.innerHTML = `
+        <svg class="feedback-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>${escapeHTML(errMsg)}</span>
+      `;
+    }
+    showToast('Connection test failed', 'error');
+  } finally {
+    if (testBtn) testBtn.disabled = false;
+    if (testText) testText.textContent = 'Test Connection';
   }
 }
 
@@ -3040,6 +3760,13 @@ function showToast(message, type = 'info', duration = 3500) {
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
         <line x1="12" y1="9" x2="12" y2="13"></line>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>`;
+  } else if (type === 'error' || type === 'danger') {
+    iconSvg = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="15" y1="9" x2="9" y2="15"></line>
+        <line x1="9" y1="9" x2="15" y2="15"></line>
       </svg>`;
   } else {
     iconSvg = `
