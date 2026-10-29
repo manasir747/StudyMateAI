@@ -116,12 +116,12 @@
         <div class="system-status-card">
           <div class="status-indicator">
             <span class="status-dot"></span>
-            <span class="status-text">Phase 3: AI Connected</span>
+            <span class="status-text">Phase 4: Persistence Active</span>
           </div>
-          <p class="status-subtext">Google Gemini Engine</p>
+          <p class="status-subtext">LocalStorage & Analytics</p>
           <div class="system-badge-row">
             <span class="badge badge-accent">Gemini 3.5 Flash-Lite</span>
-            <span class="badge badge-subtle">v3.0.0</span>
+            <span class="badge badge-subtle">v4.0.0</span>
           </div>
         </div>
       </div>
@@ -624,24 +624,30 @@
                   id="history-search"
                   class="form-control history-search-input"
                   placeholder="Search previous topics or notes..."
-                  disabled
-                  aria-label="Search study history (Available in Phase 4)"
+                  aria-label="Search study history by topic or notes"
                 >
-                <span class="badge badge-subtle history-ctrl-badge">Phase 4</span>
               </div>
 
               <div class="history-filter-wrapper">
-                <label for="history-filter-select" class="sr-only">Filter history by type</label>
-                <select id="history-filter-select" class="form-control" disabled>
-                  <option value="all">All Material Types</option>
-                  <option value="summary">Summaries Only</option>
-                  <option value="quiz">Quizzes Only</option>
-                  <option value="flashcards">Flashcards Only</option>
+                <label for="history-filter-select" class="sr-only">Filter history by difficulty</label>
+                <select id="history-filter-select" class="form-control" aria-label="Filter history by difficulty">
+                  <option value="all">All Difficulties</option>
+                  <option value="Easy">Easy Difficulty</option>
+                  <option value="Medium">Medium Difficulty</option>
+                  <option value="Hard">Hard Difficulty</option>
+                </select>
+              </div>
+
+              <div class="history-sort-wrapper">
+                <label for="history-sort-select" class="sr-only">Sort study history</label>
+                <select id="history-sort-select" class="form-control" aria-label="Sort study history">
+                  <option value="newest" selected>Newest First</option>
+                  <option value="oldest">Oldest First</option>
                 </select>
               </div>
 
               <div class="history-actions-wrapper">
-                <button type="button" id="btn-clear-history" class="btn btn-secondary btn-sm" disabled title="No history to clear in Phase 1">
+                <button type="button" id="btn-clear-history" class="btn btn-secondary btn-sm" title="Delete all saved study history sessions">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 6h18"></path>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -652,8 +658,11 @@
             </div>
           </div>
 
+          <!-- History Dynamic List Container -->
+          <div id="history-list-container" class="history-list-grid" aria-live="polite"></div>
+
           <!-- History Empty State -->
-          <div class="card">
+          <div id="history-empty-state" class="card">
             <div class="empty-state">
               <div class="empty-state-icon" aria-hidden="true">
                 <svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -667,11 +676,10 @@
               </p>
               <div class="feature-timeline-note">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
-                <span>LocalStorage session persistence will be fully connected in <strong>Phase 4</strong>.</span>
+                <span>Sessions are securely saved to your browser's LocalStorage automatically.</span>
               </div>
             </div>
           </div>
@@ -698,10 +706,10 @@
                 </svg>
               </div>
               <div class="stat-details">
-                <span class="stat-value">0</span>
+                <span id="progress-total-sessions" class="stat-value">0</span>
                 <span class="stat-label">Total Study Sessions</span>
               </div>
-              <span class="stat-subtext">Zero sessions</span>
+              <span id="progress-sessions-subtext" class="stat-subtext">Zero sessions</span>
             </div>
 
             <div class="stat-card">
@@ -712,10 +720,10 @@
                 </svg>
               </div>
               <div class="stat-details">
-                <span class="stat-value">0</span>
+                <span id="progress-total-quizzes" class="stat-value">0</span>
                 <span class="stat-label">Quizzes Attempted</span>
               </div>
-              <span class="stat-subtext">Zero attempts</span>
+              <span id="progress-quizzes-subtext" class="stat-subtext">Zero attempts</span>
             </div>
 
             <div class="stat-card">
@@ -728,10 +736,10 @@
                 </svg>
               </div>
               <div class="stat-details">
-                <span class="stat-value">0%</span>
+                <span id="progress-avg-score" class="stat-value">0%</span>
                 <span class="stat-label">Average Score</span>
               </div>
-              <span class="stat-subtext">No attempts yet</span>
+              <span id="progress-avg-subtext" class="stat-subtext">No attempts yet</span>
             </div>
 
             <div class="stat-card">
@@ -741,10 +749,37 @@
                 </svg>
               </div>
               <div class="stat-details">
-                <span class="stat-value">0%</span>
+                <span id="progress-best-score" class="stat-value">0%</span>
                 <span class="stat-label">Best Score</span>
               </div>
-              <span class="stat-subtext">Awaiting first quiz</span>
+              <span id="progress-best-subtext" class="stat-subtext">Awaiting first quiz</span>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                  <path d="M7 15h10M7 9h6"></path>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span id="progress-flashcards-reviewed" class="stat-value">0</span>
+                <span class="stat-label">Flashcards Reviewed</span>
+              </div>
+              <span id="progress-flashcards-subtext" class="stat-subtext">0 active cards</span>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-emerald" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+              <div class="stat-details">
+                <span id="progress-flashcard-mastery" class="stat-value">0%</span>
+                <span class="stat-label">Flashcard Mastery</span>
+              </div>
+              <span id="progress-mastery-subtext" class="stat-subtext">0 known cards</span>
             </div>
           </div>
 
@@ -759,13 +794,16 @@
               </div>
               <div>
                 <h3 class="card-title">Quiz Performance Trend</h3>
-                <p class="card-description">Chronological scoring breakdown across attempted quizzes.</p>
+                <p class="card-description">Chronological scoring breakdown across completed quiz attempts.</p>
               </div>
             </div>
 
             <div class="chart-container">
-              <!-- Native SVG visual placeholder for chart grid (no external chart library) -->
-              <div class="chart-empty-state">
+              <!-- Dynamically rendered native SVG chart -->
+              <div id="chart-render-wrapper" class="chart-render-wrapper" hidden></div>
+
+              <!-- Native SVG visual placeholder for chart empty state -->
+              <div id="chart-empty-state" class="chart-empty-state">
                 <svg class="chart-grid-svg" viewBox="0 0 500 200" preserveAspectRatio="none" aria-hidden="true">
                   <line x1="40" y1="30" x2="480" y2="30" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="4 4" />
                   <line x1="40" y1="75" x2="480" y2="75" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="4 4" />
@@ -787,11 +825,32 @@
                   </div>
                   <h4 class="empty-state-subtitle">No Quiz Performance Data Available</h4>
                   <p class="empty-state-description">
-                    Complete multiple-choice quizzes in future phases to visualize score trends, accuracy percentages, and subject retention.
+                    Complete multiple-choice quizzes to visualize score trends, accuracy percentages, and subject retention.
                   </p>
-                  <span class="badge badge-subtle">Native Chart Visualization • Phase 4 Integration</span>
+                  <span class="badge badge-accent">Interactive Native Score Trend Chart</span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Topic-Wise Performance Breakdown -->
+          <div class="card" id="topic-performance-card">
+            <div class="card-header">
+              <div class="card-header-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="card-title">Topic-Wise Performance</h3>
+                <p class="card-description">Summary of study sessions, quiz volume, and score retention by subject.</p>
+              </div>
+            </div>
+            <div id="topic-performance-container"></div>
+            <div id="topic-performance-empty" class="empty-state empty-state-compact">
+              <p class="empty-state-description">
+                No topic data available yet. Study materials generated will be categorized and analyzed here.
+              </p>
             </div>
           </div>
 
@@ -809,9 +868,10 @@
                 <p class="card-description">Chronological log of notes processed and quizzes submitted.</p>
               </div>
             </div>
-            <div class="empty-state empty-state-compact">
+            <div id="recent-activity-container"></div>
+            <div id="recent-activity-empty" class="empty-state empty-state-compact">
               <p class="empty-state-description">
-                No recent study activity logged. When quizzes and flashcards are completed in Phase 2 & 4, your study activity log will appear here.
+                No recent study activity logged. When quizzes and flashcards are completed, your activity log will appear here.
               </p>
             </div>
           </div>
@@ -1067,38 +1127,96 @@
                   </svg>
                 </div>
                 <div>
-                  <h3 class="card-title">Data Management</h3>
-                  <p class="card-description">Control local storage cache, reset preferences, or wipe session records.</p>
+                  <h3 class="card-title">Data Management & Persistence</h3>
+                  <p class="card-description">Export backups, import previous records, or selectively clear study data from LocalStorage.</p>
                 </div>
               </div>
 
               <div class="data-actions-list">
+                <!-- Export Backup -->
+                <div class="data-action-item">
+                  <div class="data-action-info">
+                    <span class="data-action-name">Export Study Data Backup</span>
+                    <span class="data-action-desc">Download a complete JSON backup containing all sessions, quizzes, and flashcard progress (API key excluded).</span>
+                  </div>
+                  <button type="button" id="btn-export-data" class="btn btn-secondary btn-sm">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Export JSON</span>
+                  </button>
+                </div>
+
+                <!-- Import Backup -->
+                <div class="data-action-item">
+                  <div class="data-action-info">
+                    <span class="data-action-name">Import Study Data Backup</span>
+                    <span class="data-action-desc">Restore previously exported StudyMate AI study sessions and quiz records. Supports merge or replace.</span>
+                  </div>
+                  <input type="file" id="import-data-file" accept=".json" style="display: none;" aria-label="Upload JSON study backup file">
+                  <button type="button" id="btn-import-data" class="btn btn-secondary btn-sm">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Import JSON</span>
+                  </button>
+                </div>
+
+                <!-- Clear History -->
                 <div class="data-action-item">
                   <div class="data-action-info">
                     <span class="data-action-name">Clear Study History</span>
-                    <span class="data-action-desc">Deletes all saved summaries and flashcards from local storage.</span>
+                    <span class="data-action-desc">Deletes all saved study session cards and summaries from LocalStorage.</span>
                   </div>
-                  <button type="button" id="btn-data-clear-history" class="btn btn-secondary btn-sm" disabled>
+                  <button type="button" id="btn-data-clear-history" class="btn btn-secondary btn-sm">
                     <span>Clear History</span>
                   </button>
                 </div>
 
+                <!-- Reset Quiz Scores -->
                 <div class="data-action-item">
                   <div class="data-action-info">
                     <span class="data-action-name">Reset Quiz Progress</span>
-                    <span class="data-action-desc">Wipes recorded quiz scores and resets analytics graphs.</span>
+                    <span class="data-action-desc">Wipes recorded quiz scores and resets performance trend analytics.</span>
                   </div>
-                  <button type="button" id="btn-data-reset-progress" class="btn btn-secondary btn-sm" disabled>
+                  <button type="button" id="btn-data-reset-progress" class="btn btn-secondary btn-sm">
                     <span>Reset Scores</span>
                   </button>
                 </div>
 
+                <!-- Reset Flashcard Progress -->
+                <div class="data-action-item">
+                  <div class="data-action-info">
+                    <span class="data-action-name">Reset Flashcard Progress</span>
+                    <span class="data-action-desc">Clears all marked "Known" and "Needs Review" classifications across decks.</span>
+                  </div>
+                  <button type="button" id="btn-data-reset-flashcards" class="btn btn-secondary btn-sm">
+                    <span>Reset Flashcards</span>
+                  </button>
+                </div>
+
+                <!-- Clear All Study Data -->
+                <div class="data-action-item">
+                  <div class="data-action-info">
+                    <span class="data-action-name">Clear All Study Data</span>
+                    <span class="data-action-desc">Permanently wipes all sessions, quiz attempts, and flashcards. Keeps API key and preferences intact.</span>
+                  </div>
+                  <button type="button" id="btn-data-clear-all" class="btn btn-danger btn-sm">
+                    <span>Wipe All Study Data</span>
+                  </button>
+                </div>
+
+                <!-- Reset Preferences -->
                 <div class="data-action-item">
                   <div class="data-action-info">
                     <span class="data-action-name">Reset Application Preferences</span>
-                    <span class="data-action-desc">Restores all difficulty, summary, and theme settings to defaults.</span>
+                    <span class="data-action-desc">Restores default difficulty, summary style, animations, and light theme.</span>
                   </div>
-                  <button type="button" id="btn-data-reset-prefs" class="btn btn-danger btn-sm">
+                  <button type="button" id="btn-data-reset-prefs" class="btn btn-secondary btn-sm">
                     <span>Reset Defaults</span>
                   </button>
                 </div>
@@ -1213,22 +1331,22 @@
                   <span class="step-status status-complete">✓ Completed</span>
                 </div>
 
-                <div class="roadmap-step roadmap-step-current">
-                  <div class="step-badge">Phase 3 • Current</div>
+                <div class="roadmap-step">
+                  <div class="step-badge">Phase 3 • Milestone</div>
                   <h4 class="step-title">Google Gemini Integration</h4>
                   <p class="step-desc">
                     Live client-side connection to Google Gemini API (gemini-3.5-flash-lite), prompt engineering, structured JSON validation, and connection testing.
                   </p>
-                  <span class="step-status status-complete">✓ Active & Implemented</span>
+                  <span class="step-status status-complete">✓ Completed</span>
                 </div>
 
-                <div class="roadmap-step">
-                  <div class="step-badge">Phase 4 • Upcoming</div>
+                <div class="roadmap-step roadmap-step-current">
+                  <div class="step-badge">Phase 4 • Current</div>
                   <h4 class="step-title">History & Learning Analytics</h4>
                   <p class="step-desc">
-                    LocalStorage persistence engine, searchable study history, score trend charts, and reset tools.
+                    LocalStorage persistence engine, searchable study history, score trend charts, flashcard progress, and JSON backup export/import tools.
                   </p>
-                  <span class="step-status">Scheduled Next</span>
+                  <span class="step-status status-complete">✓ Active & Implemented</span>
                 </div>
               </div>
             </div>

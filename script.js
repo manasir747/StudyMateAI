@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * StudyMate AI — Phase 3: AI API Integration & Response Validation
+ * StudyMate AI — Phase 4: Persistent Storage, History & Progress Tracking
  * Pure Vanilla JavaScript (ES6+)
  * Strictly Zero External Frameworks, Libraries, or Dependencies
  * ============================================================================
@@ -1035,6 +1035,10 @@ const AppState = {
   apiKeyConfigured: false,
   isGenerating: false,
 
+  // Phase 4: Active session tracking for persistence
+  activeSessionId: null,
+  isRestoredSession: false,
+
   // In-memory session statistics (Starts at 0, updated in real time)
   stats: {
     sessionsCount: 0,
@@ -1094,7 +1098,10 @@ const SECTION_METADATA = {
 const STORAGE_KEYS = {
   THEME: 'studymate_theme',
   PREFERENCES: 'studymate_preferences',
-  API_KEY: 'studymate_api_key'
+  API_KEY: 'studymate_api_key',
+  SESSIONS: 'studymate_sessions_v1',
+  QUIZ_ATTEMPTS: 'studymate_quiz_attempts_v1',
+  FLASHCARD_PROGRESS: 'studymate_flashcard_progress_v1'
 };
 
 /* ============================================================================
@@ -1110,6 +1117,19 @@ function initializeApp() {
   initializeStudyForm();
   initializeSettings();
   initializeConfirmationDialogs();
+  initializeHistory(); // Phase 4: History event listeners
+  updateDashboardStats();
+
+  // Phase 4: Load persisted stats into in-memory counters on startup
+  const storedSessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const storedAttempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  AppState.stats.sessionsCount = storedSessions.length;
+  AppState.stats.quizzesCount = storedAttempts.length;
+  if (storedAttempts.length > 0) {
+    AppState.stats.quizScores = storedAttempts.map(a => a.percentage || 0);
+    const sum = AppState.stats.quizScores.reduce((acc, val) => acc + val, 0);
+    AppState.stats.averageScore = Math.round(sum / AppState.stats.quizScores.length);
+  }
   updateDashboardStats();
 
   handleInitialHash();
@@ -1286,6 +1306,13 @@ function switchSection(sectionId, updateHistory = true) {
     mainContent.scrollTop = 0;
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Phase 4: Refresh data-driven sections when navigated to
+  if (sectionId === 'history') {
+    renderHistoryList();
+  } else if (sectionId === 'progress') {
+    renderProgressDashboard();
+  }
 }
 
 /* ============================================================================
@@ -1962,6 +1989,12 @@ async function handleGenerateClick() {
     AppState.stats.sessionsCount += 1;
     updateDashboardStats();
 
+    // Phase 4: Save session to persistent storage
+    const savedId = saveStudySession(userTopic, userNotes, true);
+    if (savedId) {
+      console.log('Session saved:', savedId);
+    }
+
     // Render Views
     renderSummary();
     renderQuiz();
@@ -2065,6 +2098,12 @@ function handleDemoModeClick() {
   // Update In-Memory Statistics
   AppState.stats.sessionsCount += 1;
   updateDashboardStats();
+
+  // Phase 4: Save session to persistent storage
+  const savedId = saveStudySession(userTopic, userNotes, false);
+  if (savedId) {
+    console.log('Demo session saved:', savedId);
+  }
 
   // Render all three active views
   renderSummary();
@@ -2694,6 +2733,9 @@ function finalizeQuizSubmission() {
 
     qState.attemptRecorded = true;
     updateDashboardStats();
+
+    // Phase 4: Save quiz attempt to persistent storage
+    saveQuizAttempt();
   }
 
   renderQuizResults();
@@ -3159,6 +3201,9 @@ function classifyFlashcard(status) {
   fState.classifications[currentCard.id] = status;
   renderFlashcards();
 
+  // Phase 4: Save flashcard progress to persistent storage
+  saveFlashcardProgress();
+
   if (status === 'known') {
     showToast('Flashcard marked as known.', 'success');
   } else {
@@ -3175,16 +3220,30 @@ function updateDashboardStats() {
   const quizzesEl = document.getElementById('stat-quizzes-count');
   const scoreAvgEl = document.getElementById('stat-score-avg');
 
+  // Phase 4: Merge in-memory stats with stored data for dashboard quick stats
+  const storedSessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const storedAttempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+
+  // Use the larger of stored count or in-memory count (in-memory includes the current unsaved session)
+  const totalSessions = Math.max(storedSessions.length, AppState.stats.sessionsCount);
+  const totalQuizzes = Math.max(storedAttempts.length, AppState.stats.quizzesCount);
+
+  let avgScore = AppState.stats.averageScore;
+  if (storedAttempts.length > 0) {
+    const sum = storedAttempts.reduce((acc, a) => acc + (a.percentage || 0), 0);
+    avgScore = Math.round(sum / storedAttempts.length);
+  }
+
   if (sessionsEl) {
-    sessionsEl.textContent = String(AppState.stats.sessionsCount);
+    sessionsEl.textContent = String(totalSessions);
   }
 
   if (quizzesEl) {
-    quizzesEl.textContent = String(AppState.stats.quizzesCount);
+    quizzesEl.textContent = String(totalQuizzes);
   }
 
   if (scoreAvgEl) {
-    scoreAvgEl.textContent = `${AppState.stats.averageScore}%`;
+    scoreAvgEl.textContent = `${avgScore}%`;
   }
 }
 
@@ -3264,21 +3323,46 @@ function initializeSettings() {
     });
   }
 
-  // 5. Data Management Action Buttons
+  // 5. Data Management Action Buttons (Phase 4: Fully functional)
   const clearHistoryBtn = document.getElementById('btn-data-clear-history');
   const resetProgressBtn = document.getElementById('btn-data-reset-progress');
   const resetPrefsBtn = document.getElementById('btn-data-reset-prefs');
+  const exportBtn = document.getElementById('btn-export-data');
+  const importBtn = document.getElementById('btn-import-data');
+  const importFileInput = document.getElementById('import-data-file');
+  const resetFlashcardsBtn = document.getElementById('btn-data-reset-flashcards');
+  const clearAllBtn = document.getElementById('btn-data-clear-all');
 
-  if (clearHistoryBtn) {
-    clearHistoryBtn.addEventListener('click', () => {
-      showToast('Study history tracking starts in Phase 4', 'info');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportStudyData);
+  }
+
+  if (importBtn && importFileInput) {
+    importBtn.addEventListener('click', () => {
+      importFileInput.value = '';
+      importFileInput.click();
+    });
+    importFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        importStudyData(e.target.files[0]);
+      }
     });
   }
 
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', clearAllHistory);
+  }
+
   if (resetProgressBtn) {
-    resetProgressBtn.addEventListener('click', () => {
-      showToast('Quiz progress tracking starts in Phase 4', 'info');
-    });
+    resetProgressBtn.addEventListener('click', resetQuizProgress);
+  }
+
+  if (resetFlashcardsBtn) {
+    resetFlashcardsBtn.addEventListener('click', resetFlashcardProgress);
+  }
+
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', clearAllStudyData);
   }
 
   if (resetPrefsBtn) {
@@ -3632,6 +3716,7 @@ function resetPreferencesToDefaults() {
    ============================================================================ */
 
 let activeModalConfirmCallback = null;
+let activeModalCancelCallback = null;
 
 function initializeConfirmationDialogs() {
   const modal = document.getElementById('app-modal');
@@ -3640,7 +3725,16 @@ function initializeConfirmationDialogs() {
   const confirmBtn = document.getElementById('modal-confirm-btn');
 
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
-  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      if (typeof activeModalCancelCallback === 'function') {
+        const callback = activeModalCancelCallback;
+        activeModalCancelCallback = null;
+        callback();
+      }
+      closeModal();
+    });
+  }
 
   if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
@@ -3682,7 +3776,8 @@ function showModal({
   showCancel = true,
   isDanger = false,
   iconType = 'info',
-  onConfirm = null
+  onConfirm = null,
+  onCancel = null
 }) {
   const modal = document.getElementById('app-modal');
   const titleEl = document.getElementById('modal-title');
@@ -3717,6 +3812,7 @@ function showModal({
   }
 
   activeModalConfirmCallback = onConfirm;
+  activeModalCancelCallback = onCancel;
 
   if (typeof modal.showModal === 'function') {
     modal.showModal();
@@ -3735,6 +3831,7 @@ function closeModal() {
     }
   }
   activeModalConfirmCallback = null;
+  activeModalCancelCallback = null;
 }
 
 /* ============================================================================
@@ -3819,6 +3916,1150 @@ function escapeHTML(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/* ============================================================================
+   PHASE 4: PERSISTENT STORAGE MANAGER
+   ============================================================================ */
+
+/**
+ * StorageManager — Safe LocalStorage CRUD utility with error handling.
+ * All methods wrap try/catch to gracefully handle storage quota or disabled storage.
+ */
+const StorageManager = {
+  /**
+   * Check if LocalStorage is available.
+   * @returns {boolean}
+   */
+  isAvailable() {
+    try {
+      const testKey = '__studymate_storage_test__';
+      localStorage.setItem(testKey, '1');
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  /**
+   * Read and parse a JSON array/object from LocalStorage.
+   * @param {string} key - Storage key
+   * @param {*} fallback - Default value if key is missing or invalid
+   * @returns {*}
+   */
+  readJSON(key, fallback = []) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw === null) return fallback;
+      const parsed = JSON.parse(raw);
+      return parsed !== null && parsed !== undefined ? parsed : fallback;
+    } catch (e) {
+      console.warn('StorageManager.readJSON failed for key:', key, e);
+      return fallback;
+    }
+  },
+
+  /**
+   * Write a JSON value to LocalStorage.
+   * @param {string} key
+   * @param {*} data
+   * @returns {boolean} success
+   */
+  writeJSON(key, data) {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      console.error('StorageManager.writeJSON failed for key:', key, e);
+      if (e.name === 'QuotaExceededError') {
+        showToast('Storage is full. Please clear some study history to free up space.', 'error');
+      }
+      return false;
+    }
+  },
+
+  /**
+   * Find and update a record by its id field within a stored JSON array.
+   * @param {string} key - Storage key containing an array
+   * @param {string} id - Record id to match
+   * @param {object} updates - Fields to merge into the record
+   * @returns {boolean} success
+   */
+  updateRecord(key, id, updates) {
+    try {
+      const records = this.readJSON(key, []);
+      const idx = records.findIndex(r => r.sessionId === id || r.attemptId === id);
+      if (idx === -1) return false;
+      records[idx] = { ...records[idx], ...updates };
+      return this.writeJSON(key, records);
+    } catch (e) {
+      console.error('StorageManager.updateRecord failed:', e);
+      return false;
+    }
+  },
+
+  /**
+   * Delete a record by its id field from a stored JSON array.
+   * @param {string} key
+   * @param {string} id
+   * @returns {boolean} success
+   */
+  deleteRecord(key, id) {
+    try {
+      const records = this.readJSON(key, []);
+      const filtered = records.filter(r => r.sessionId !== id && r.attemptId !== id);
+      return this.writeJSON(key, filtered);
+    } catch (e) {
+      console.error('StorageManager.deleteRecord failed:', e);
+      return false;
+    }
+  },
+
+  /**
+   * Remove a key entirely from LocalStorage.
+   * @param {string} key
+   */
+  removeKey(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.warn('StorageManager.removeKey failed:', e);
+    }
+  }
+};
+
+/**
+ * Generate a unique session ID.
+ * @returns {string}
+ */
+function generateSessionId() {
+  return 'sess-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+}
+
+/* ============================================================================
+   PHASE 4: SESSION PERSISTENCE — SAVE STUDY SESSION
+   ============================================================================ */
+
+/**
+ * Saves the current AppState material, quiz, and flashcard data as a persistent session.
+ * @param {string} topic - The study topic
+ * @param {string} notes - The user's notes (will be truncated)
+ * @param {boolean} isAI - Whether this was an AI-generated session
+ * @returns {string|null} The saved session ID, or null on failure
+ */
+function saveStudySession(topic, notes, isAI) {
+  if (!AppState.activeMaterial) return null;
+
+  const sessionId = generateSessionId();
+  const maxNotesLength = 2000;
+  const truncatedNotes = notes && notes.length > maxNotesLength
+    ? notes.substring(0, maxNotesLength) + '...'
+    : (notes || '');
+
+  const session = {
+    sessionId: sessionId,
+    topic: AppState.activeMaterial.displayTitle || topic || 'Untitled',
+    notes: truncatedNotes,
+    difficulty: AppState.activeMaterial.difficulty || 'Medium',
+    style: AppState.activeMaterial.style || 'Simple Explanation',
+    isAI: isAI,
+    model: isAI ? GEMINI_CONFIG.model : null,
+    material: {
+      summaryParagraphs: AppState.activeMaterial.summaryParagraphs || [],
+      takeaways: AppState.activeMaterial.takeaways || [],
+      concepts: AppState.activeMaterial.concepts || []
+    },
+    quiz: AppState.quiz.questions.map(q => ({ ...q })),
+    flashcards: AppState.flashcards.deck.map(c => ({ ...c })),
+    createdAt: new Date().toISOString(),
+    quizScore: null,
+    flashcardProgress: {}
+  };
+
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  sessions.unshift(session);
+
+  // Keep maximum 50 sessions to avoid storage bloat
+  if (sessions.length > 50) {
+    sessions.length = 50;
+  }
+
+  if (StorageManager.writeJSON(STORAGE_KEYS.SESSIONS, sessions)) {
+    AppState.activeSessionId = sessionId;
+    AppState.isRestoredSession = false;
+    return sessionId;
+  }
+  return null;
+}
+
+/* ============================================================================
+   PHASE 4: QUIZ PERSISTENCE — SAVE QUIZ ATTEMPT
+   ============================================================================ */
+
+/**
+ * Save a quiz attempt to persistent storage.
+ */
+function saveQuizAttempt() {
+  if (!AppState.activeSessionId) return;
+  if (!AppState.quiz.score) return;
+
+  const qState = AppState.quiz;
+  const score = qState.score;
+
+  const correctAnswers = [];
+  const incorrectAnswers = [];
+  qState.questions.forEach((q, idx) => {
+    if (qState.selectedAnswers[idx] === q.correctIndex) {
+      correctAnswers.push(idx);
+    } else {
+      incorrectAnswers.push(idx);
+    }
+  });
+
+  const attempt = {
+    attemptId: 'att-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    sessionId: AppState.activeSessionId,
+    topic: AppState.activeMaterial ? AppState.activeMaterial.displayTitle : 'Unknown',
+    score: score.correctCount,
+    totalQuestions: 5,
+    percentage: score.percentage,
+    correctAnswers: correctAnswers,
+    incorrectAnswers: incorrectAnswers,
+    attemptDate: new Date().toISOString()
+  };
+
+  const attempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  attempts.unshift(attempt);
+
+  // Keep maximum 200 attempts
+  if (attempts.length > 200) {
+    attempts.length = 200;
+  }
+
+  StorageManager.writeJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, attempts);
+
+  // Also update the session's quizScore
+  StorageManager.updateRecord(STORAGE_KEYS.SESSIONS, AppState.activeSessionId, {
+    quizScore: score.percentage
+  });
+}
+
+/* ============================================================================
+   PHASE 4: FLASHCARD PERSISTENCE — SAVE FLASHCARD PROGRESS
+   ============================================================================ */
+
+/**
+ * Save flashcard classification progress to persistent storage.
+ */
+function saveFlashcardProgress() {
+  if (!AppState.activeSessionId) return;
+
+  const progressData = {
+    sessionId: AppState.activeSessionId,
+    classifications: { ...AppState.flashcards.classifications },
+    lastStudied: new Date().toISOString()
+  };
+
+  const allProgress = StorageManager.readJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, []);
+  const existingIdx = allProgress.findIndex(p => p.sessionId === AppState.activeSessionId);
+
+  if (existingIdx !== -1) {
+    allProgress[existingIdx] = progressData;
+  } else {
+    allProgress.unshift(progressData);
+  }
+
+  StorageManager.writeJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, allProgress);
+
+  // Also update the session's flashcardProgress
+  StorageManager.updateRecord(STORAGE_KEYS.SESSIONS, AppState.activeSessionId, {
+    flashcardProgress: progressData.classifications
+  });
+}
+
+/* ============================================================================
+   PHASE 4: HISTORY RENDERING & MANAGEMENT
+   ============================================================================ */
+
+/**
+ * Initialize history section event listeners.
+ */
+function initializeHistory() {
+  const searchInput = document.getElementById('history-search');
+  const filterSelect = document.getElementById('history-filter-select');
+  const sortSelect = document.getElementById('history-sort-select');
+  const clearBtn = document.getElementById('btn-clear-history');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', debounceRender);
+  }
+  if (filterSelect) {
+    filterSelect.addEventListener('change', renderHistoryList);
+  }
+  if (sortSelect) {
+    sortSelect.addEventListener('change', renderHistoryList);
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearAllHistory);
+  }
+}
+
+let _historyDebounceTimer = null;
+function debounceRender() {
+  clearTimeout(_historyDebounceTimer);
+  _historyDebounceTimer = setTimeout(renderHistoryList, 250);
+}
+
+/**
+ * Render the history list from stored sessions.
+ */
+function renderHistoryList() {
+  const container = document.getElementById('history-list-container');
+  const emptyState = document.getElementById('history-empty-state');
+  if (!container) return;
+
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+
+  // Apply search filter
+  const searchInput = document.getElementById('history-search');
+  const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+  // Apply difficulty filter
+  const filterSelect = document.getElementById('history-filter-select');
+  const filterValue = filterSelect ? filterSelect.value : 'all';
+
+  // Apply sort
+  const sortSelect = document.getElementById('history-sort-select');
+  const sortValue = sortSelect ? sortSelect.value : 'newest';
+
+  let filtered = sessions.filter(s => {
+    // Search filter: match topic or notes
+    if (searchTerm) {
+      const topicMatch = (s.topic || '').toLowerCase().includes(searchTerm);
+      const notesMatch = (s.notes || '').toLowerCase().includes(searchTerm);
+      if (!topicMatch && !notesMatch) return false;
+    }
+
+    // Difficulty filter
+    if (filterValue !== 'all') {
+      const sessionDiff = (s.difficulty || '').toLowerCase();
+      if (sessionDiff !== filterValue.toLowerCase()) return false;
+    }
+
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortValue === 'oldest' ? dateA - dateB : dateB - dateA;
+  });
+
+  container.innerHTML = '';
+
+  if (filtered.length === 0) {
+    container.setAttribute('hidden', '');
+    if (emptyState) emptyState.removeAttribute('hidden');
+    return;
+  }
+
+  if (emptyState) emptyState.setAttribute('hidden', '');
+  container.removeAttribute('hidden');
+
+  filtered.forEach(session => {
+    const card = createHistoryCard(session);
+    container.appendChild(card);
+  });
+}
+
+/**
+ * Create a history session card DOM element.
+ * @param {object} session
+ * @returns {HTMLElement}
+ */
+function createHistoryCard(session) {
+  const card = document.createElement('div');
+  card.className = 'history-session-card';
+  card.setAttribute('data-session-id', session.sessionId);
+
+  const dateStr = formatRelativeDate(session.createdAt);
+  const fullDate = new Date(session.createdAt).toLocaleString();
+
+  // Badges
+  const typeBadge = session.isAI
+    ? '<span class="history-badge ai">AI Generated</span>'
+    : '<span class="history-badge demo">Demo Mode</span>';
+
+  const diffBadge = `<span class="history-badge difficulty">${escapeHTML(session.difficulty || 'Medium')}</span>`;
+
+  let scoreBadge = '';
+  if (session.quizScore !== null && session.quizScore !== undefined) {
+    const scoreClass = session.quizScore >= 80 ? 'high' : session.quizScore >= 60 ? 'mid' : 'low';
+    scoreBadge = `<span class="history-badge score score-${scoreClass}">Quiz: ${session.quizScore}%</span>`;
+  }
+
+  // Flashcard progress summary
+  let flashcardInfo = '';
+  if (session.flashcardProgress && Object.keys(session.flashcardProgress).length > 0) {
+    const classifs = session.flashcardProgress;
+    const known = Object.values(classifs).filter(v => v === 'known').length;
+    const total = Object.keys(classifs).length;
+    flashcardInfo = `<span class="history-badge flashcard-progress">Cards: ${known}/${total} known</span>`;
+  }
+
+  card.innerHTML = `
+    <div class="history-card-header">
+      <h4 class="history-card-topic" title="${escapeHTML(session.topic)}">${escapeHTML(session.topic)}</h4>
+      <time class="history-card-date" datetime="${session.createdAt}" title="${fullDate}">${dateStr}</time>
+    </div>
+    <div class="history-card-meta">
+      ${typeBadge}
+      ${diffBadge}
+      ${scoreBadge}
+      ${flashcardInfo}
+    </div>
+    <div class="history-card-actions">
+      <button type="button" class="btn btn-primary btn-sm history-reopen-btn" data-session-id="${session.sessionId}" title="Reopen this study session">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Reopen
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm history-delete-btn" data-session-id="${session.sessionId}" title="Delete this session">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Delete
+      </button>
+    </div>
+  `;
+
+  // Event Listeners
+  const reopenBtn = card.querySelector('.history-reopen-btn');
+  const deleteBtn = card.querySelector('.history-delete-btn');
+
+  if (reopenBtn) {
+    reopenBtn.addEventListener('click', () => reopenSession(session.sessionId));
+  }
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => deleteSession(session.sessionId));
+  }
+
+  return card;
+}
+
+/**
+ * Format a date string as a human-readable relative date.
+ * @param {string} isoStr
+ * @returns {string}
+ */
+function formatRelativeDate(isoStr) {
+  try {
+    const date = new Date(isoStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr = Math.floor(diffMs / 3600000);
+    const diffDay = Math.floor(diffMs / 86400000);
+
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHr < 24) return `${diffHr}h ago`;
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch (e) {
+    return 'Unknown date';
+  }
+}
+
+/**
+ * Reopen a saved study session, restoring it into AppState and rendering views.
+ * @param {string} sessionId
+ */
+function reopenSession(sessionId) {
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const session = sessions.find(s => s.sessionId === sessionId);
+
+  if (!session) {
+    showToast('Session not found. It may have been deleted.', 'error');
+    return;
+  }
+
+  // Restore Active Material
+  AppState.activeMaterial = {
+    id: session.sessionId,
+    displayTitle: session.topic,
+    baseTitle: session.topic,
+    category: session.isAI ? 'AI Generated' : 'Demo',
+    difficulty: session.difficulty,
+    style: session.style,
+    isAI: session.isAI,
+    isGenericDemo: false,
+    summaryParagraphs: session.material.summaryParagraphs || [],
+    takeaways: session.material.takeaways || [],
+    concepts: session.material.concepts || []
+  };
+
+  // Restore Quiz State
+  AppState.quiz = {
+    questions: (session.quiz || []).map(q => ({ ...q })),
+    currentIndex: 0,
+    selectedAnswers: [null, null, null, null, null],
+    isSubmitted: false,
+    score: null,
+    attemptRecorded: false
+  };
+
+  // Restore Flashcards State
+  const savedClassifications = session.flashcardProgress || {};
+  AppState.flashcards = {
+    deck: (session.flashcards || []).map(c => ({ ...c })),
+    currentIndex: 0,
+    isFlipped: false,
+    classifications: { ...savedClassifications }
+  };
+
+  // Track the reopened session
+  AppState.activeSessionId = sessionId;
+  AppState.isRestoredSession = true;
+
+  // Render all views
+  renderSummary();
+  renderQuiz();
+  renderFlashcards();
+
+  // Switch to dashboard summary tab
+  switchSection('dashboard');
+  switchTabByName('summary');
+
+  showToast(`Reopened: ${session.topic}`, 'success');
+
+  const workspaceCard = document.querySelector('.workspace-card');
+  if (workspaceCard) {
+    workspaceCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/**
+ * Delete a specific study session with confirmation.
+ * @param {string} sessionId
+ */
+function deleteSession(sessionId) {
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const session = sessions.find(s => s.sessionId === sessionId);
+  const topicName = session ? session.topic : 'this session';
+
+  showModal({
+    title: 'Delete Study Session?',
+    message: `Are you sure you want to delete "${topicName}"? This will also remove any associated quiz attempts and flashcard progress. This action cannot be undone.`,
+    confirmText: 'Delete Session',
+    cancelText: 'Cancel',
+    isDanger: true,
+    iconType: 'warning',
+    onConfirm: () => {
+      // Remove from sessions
+      StorageManager.deleteRecord(STORAGE_KEYS.SESSIONS, sessionId);
+
+      // Remove associated quiz attempts
+      const attempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+      const filteredAttempts = attempts.filter(a => a.sessionId !== sessionId);
+      StorageManager.writeJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, filteredAttempts);
+
+      // Remove associated flashcard progress
+      const progress = StorageManager.readJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, []);
+      const filteredProgress = progress.filter(p => p.sessionId !== sessionId);
+      StorageManager.writeJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, filteredProgress);
+
+      // Clear active session if it's the one being deleted
+      if (AppState.activeSessionId === sessionId) {
+        AppState.activeSessionId = null;
+        AppState.isRestoredSession = false;
+      }
+
+      renderHistoryList();
+      showToast('Study session deleted.', 'info');
+    }
+  });
+}
+
+/**
+ * Clear all study history with confirmation.
+ */
+function clearAllHistory() {
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  if (sessions.length === 0) {
+    showToast('No study history to clear.', 'info');
+    return;
+  }
+
+  showModal({
+    title: 'Clear All Study History?',
+    message: `This will permanently delete all ${sessions.length} saved study session(s), including their quiz attempts and flashcard progress. This action cannot be undone.`,
+    confirmText: 'Clear All History',
+    cancelText: 'Cancel',
+    isDanger: true,
+    iconType: 'warning',
+    onConfirm: () => {
+      StorageManager.removeKey(STORAGE_KEYS.SESSIONS);
+      StorageManager.removeKey(STORAGE_KEYS.QUIZ_ATTEMPTS);
+      StorageManager.removeKey(STORAGE_KEYS.FLASHCARD_PROGRESS);
+
+      AppState.activeSessionId = null;
+      AppState.isRestoredSession = false;
+
+      renderHistoryList();
+      showToast('All study history cleared.', 'info');
+    }
+  });
+}
+
+/* ============================================================================
+   PHASE 4: PROGRESS DASHBOARD RENDERING
+   ============================================================================ */
+
+/**
+ * Render the full progress dashboard with stats, chart, topic performance, and activity.
+ */
+function renderProgressDashboard() {
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const attempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  const fcProgress = StorageManager.readJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, []);
+
+  // --- Stat Cards ---
+  const totalSessions = sessions.length;
+  const totalQuizzes = attempts.length;
+
+  let avgScore = 0;
+  let bestScore = 0;
+  if (attempts.length > 0) {
+    const sum = attempts.reduce((acc, a) => acc + (a.percentage || 0), 0);
+    avgScore = Math.round(sum / attempts.length);
+    bestScore = Math.max(...attempts.map(a => a.percentage || 0));
+  }
+
+  let totalFlashcardsReviewed = 0;
+  let totalKnown = 0;
+  fcProgress.forEach(p => {
+    const classifs = p.classifications || {};
+    const count = Object.keys(classifs).length;
+    const known = Object.values(classifs).filter(v => v === 'known').length;
+    totalFlashcardsReviewed += count;
+    totalKnown += known;
+  });
+  const flashcardMastery = totalFlashcardsReviewed > 0
+    ? Math.round((totalKnown / totalFlashcardsReviewed) * 100)
+    : 0;
+
+  // Update stat card elements
+  setTextById('progress-total-sessions', String(totalSessions));
+  setTextById('progress-sessions-subtext', totalSessions === 1 ? '1 session completed' : `${totalSessions} sessions completed`);
+
+  setTextById('progress-total-quizzes', String(totalQuizzes));
+  setTextById('progress-quizzes-subtext', totalQuizzes === 1 ? '1 quiz attempt' : `${totalQuizzes} quiz attempts`);
+
+  setTextById('progress-avg-score', `${avgScore}%`);
+  setTextById('progress-avg-subtext', attempts.length > 0 ? `Average across ${attempts.length} attempt(s)` : 'No quiz attempts yet');
+
+  setTextById('progress-best-score', `${bestScore}%`);
+  setTextById('progress-best-subtext', bestScore > 0 ? 'Your highest quiz score' : 'No scores recorded yet');
+
+  setTextById('progress-flashcards-reviewed', String(totalFlashcardsReviewed));
+  setTextById('progress-flashcards-subtext', `${totalFlashcardsReviewed} cards reviewed`);
+
+  setTextById('progress-flashcard-mastery', `${flashcardMastery}%`);
+  setTextById('progress-mastery-subtext', totalFlashcardsReviewed > 0 ? `${totalKnown} of ${totalFlashcardsReviewed} marked known` : 'No flashcard data yet');
+
+  // --- Score Trend Chart ---
+  renderScoreChart(attempts);
+
+  // --- Topic-Wise Performance ---
+  renderTopicPerformance(sessions, attempts, fcProgress);
+
+  // --- Recent Activity ---
+  renderRecentActivity(sessions, attempts);
+}
+
+/**
+ * Helper to set textContent by element ID.
+ */
+function setTextById(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+/**
+ * Render an SVG bar chart showing quiz score trends.
+ * @param {Array} attempts - Array of quiz attempt objects
+ */
+function renderScoreChart(attempts) {
+  const wrapper = document.getElementById('chart-render-wrapper');
+  const emptyState = document.getElementById('chart-empty-state');
+
+  if (!wrapper) return;
+
+  if (attempts.length === 0) {
+    wrapper.setAttribute('hidden', '');
+    if (emptyState) emptyState.removeAttribute('hidden');
+    return;
+  }
+
+  if (emptyState) emptyState.setAttribute('hidden', '');
+  wrapper.removeAttribute('hidden');
+
+  // Take the last 15 attempts (oldest first for left-to-right)
+  const recentAttempts = attempts.slice(0, 15).reverse();
+  const barCount = recentAttempts.length;
+
+  const svgWidth = 700;
+  const svgHeight = 260;
+  const barPadding = 6;
+  const chartLeft = 45;
+  const chartBottom = 40;
+  const chartTop = 20;
+  const chartRight = 15;
+  const chartWidth = svgWidth - chartLeft - chartRight;
+  const chartHeight = svgHeight - chartTop - chartBottom;
+  const barWidth = Math.min(40, (chartWidth - barPadding * barCount) / barCount);
+
+  let svgContent = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" class="score-chart-svg" role="img" aria-label="Quiz score trend chart">`;
+
+  // Y-axis labels & grid lines
+  for (let pct = 0; pct <= 100; pct += 25) {
+    const y = chartTop + chartHeight - (pct / 100) * chartHeight;
+    svgContent += `<line x1="${chartLeft}" y1="${y}" x2="${svgWidth - chartRight}" y2="${y}" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="4,3" />`;
+    svgContent += `<text x="${chartLeft - 8}" y="${y + 4}" text-anchor="end" fill="var(--text-secondary)" font-size="11">${pct}%</text>`;
+  }
+
+  // Bars
+  recentAttempts.forEach((attempt, i) => {
+    const x = chartLeft + i * (barWidth + barPadding) + barPadding;
+    const barHeight = (attempt.percentage / 100) * chartHeight;
+    const y = chartTop + chartHeight - barHeight;
+
+    let barColor = 'var(--primary)';
+    if (attempt.percentage >= 80) barColor = 'var(--success)';
+    else if (attempt.percentage >= 60) barColor = 'var(--warning)';
+    else if (attempt.percentage < 40) barColor = 'var(--danger)';
+
+    svgContent += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="3" fill="${barColor}" opacity="0.85">
+      <title>${escapeHTML(attempt.topic || 'Quiz')}: ${attempt.percentage}% (${attempt.score}/${attempt.totalQuestions})</title>
+    </rect>`;
+
+    // Score label on top of bar
+    svgContent += `<text x="${x + barWidth / 2}" y="${y - 5}" text-anchor="middle" fill="var(--text-primary)" font-size="10" font-weight="600">${attempt.percentage}%</text>`;
+
+    // X-axis label (attempt number)
+    svgContent += `<text x="${x + barWidth / 2}" y="${svgHeight - 10}" text-anchor="middle" fill="var(--text-secondary)" font-size="10">#${i + 1}</text>`;
+  });
+
+  svgContent += '</svg>';
+  wrapper.innerHTML = svgContent;
+}
+
+/**
+ * Render topic-wise performance table.
+ */
+function renderTopicPerformance(sessions, attempts, fcProgress) {
+  const container = document.getElementById('topic-performance-container');
+  const emptyState = document.getElementById('topic-performance-empty');
+  if (!container) return;
+
+  if (sessions.length === 0) {
+    container.innerHTML = '';
+    if (emptyState) emptyState.removeAttribute('hidden');
+    return;
+  }
+  if (emptyState) emptyState.setAttribute('hidden', '');
+
+  // Group by topic (lowercase for grouping, preserve original for display)
+  const topicMap = {};
+  sessions.forEach(s => {
+    const key = (s.topic || 'Unknown').toLowerCase().trim();
+    if (!topicMap[key]) {
+      topicMap[key] = {
+        displayName: s.topic || 'Unknown',
+        sessions: 0,
+        quizScores: [],
+        flashcardsKnown: 0,
+        flashcardsTotal: 0
+      };
+    }
+    topicMap[key].sessions += 1;
+  });
+
+  // Add quiz data
+  attempts.forEach(a => {
+    const key = (a.topic || 'Unknown').toLowerCase().trim();
+    if (topicMap[key]) {
+      topicMap[key].quizScores.push(a.percentage || 0);
+    }
+  });
+
+  // Add flashcard data
+  fcProgress.forEach(p => {
+    const session = sessions.find(s => s.sessionId === p.sessionId);
+    if (session) {
+      const key = (session.topic || 'Unknown').toLowerCase().trim();
+      if (topicMap[key]) {
+        const classifs = p.classifications || {};
+        topicMap[key].flashcardsTotal += Object.keys(classifs).length;
+        topicMap[key].flashcardsKnown += Object.values(classifs).filter(v => v === 'known').length;
+      }
+    }
+  });
+
+  const topics = Object.values(topicMap).sort((a, b) => b.sessions - a.sessions);
+
+  let html = '<div class="topic-perf-table-wrapper"><table class="topic-perf-table"><thead><tr>';
+  html += '<th>Topic</th><th>Sessions</th><th>Avg Score</th><th>Best Score</th><th>Cards Mastery</th>';
+  html += '</tr></thead><tbody>';
+
+  topics.forEach(t => {
+    const avgScore = t.quizScores.length > 0
+      ? Math.round(t.quizScores.reduce((a, b) => a + b, 0) / t.quizScores.length)
+      : '\u2014';
+    const bestScore = t.quizScores.length > 0
+      ? Math.max(...t.quizScores)
+      : '\u2014';
+    const mastery = t.flashcardsTotal > 0
+      ? Math.round((t.flashcardsKnown / t.flashcardsTotal) * 100) + '%'
+      : '\u2014';
+
+    html += `<tr>
+      <td class="topic-name-cell">${escapeHTML(t.displayName)}</td>
+      <td>${t.sessions}</td>
+      <td>${typeof avgScore === 'number' ? avgScore + '%' : avgScore}</td>
+      <td>${typeof bestScore === 'number' ? bestScore + '%' : bestScore}</td>
+      <td>${mastery}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+/**
+ * Render recent activity feed.
+ */
+function renderRecentActivity(sessions, attempts) {
+  const container = document.getElementById('recent-activity-container');
+  const emptyState = document.getElementById('recent-activity-empty');
+  if (!container) return;
+
+  // Merge sessions and attempts into a combined activity list
+  const activities = [];
+
+  sessions.forEach(s => {
+    activities.push({
+      type: 'session',
+      title: `Studied: ${s.topic}`,
+      detail: s.isAI ? 'AI Generated' : 'Demo Mode',
+      date: s.createdAt
+    });
+  });
+
+  attempts.forEach(a => {
+    activities.push({
+      type: 'quiz',
+      title: `Quiz: ${a.topic}`,
+      detail: `Score: ${a.percentage}% (${a.score}/${a.totalQuestions})`,
+      date: a.attemptDate
+    });
+  });
+
+  // Sort by date, newest first
+  activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Show top 10
+  const recent = activities.slice(0, 10);
+
+  if (recent.length === 0) {
+    container.innerHTML = '';
+    if (emptyState) emptyState.removeAttribute('hidden');
+    return;
+  }
+  if (emptyState) emptyState.setAttribute('hidden', '');
+
+  let html = '<ul class="activity-list">';
+  recent.forEach(a => {
+    const iconClass = a.type === 'quiz' ? 'quiz' : a.type === 'flashcard' ? 'flashcard' : 'session';
+    const iconSvg = a.type === 'quiz'
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
+
+    html += `<li class="activity-item">
+      <span class="activity-icon ${iconClass}">${iconSvg}</span>
+      <div class="activity-content">
+        <span class="activity-title">${escapeHTML(a.title)}</span>
+        <span class="activity-detail">${escapeHTML(a.detail)}</span>
+        <time class="activity-time">${formatRelativeDate(a.date)}</time>
+      </div>
+    </li>`;
+  });
+  html += '</ul>';
+
+  container.innerHTML = html;
+}
+
+/* ============================================================================
+   PHASE 4: DATA EXPORT & IMPORT
+   ============================================================================ */
+
+/**
+ * Export all study data as a downloadable JSON file.
+ * NEVER includes the API key.
+ */
+function exportStudyData() {
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const attempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  const fcProgress = StorageManager.readJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, []);
+  const preferences = StorageManager.readJSON(STORAGE_KEYS.PREFERENCES, null);
+  const theme = localStorage.getItem(STORAGE_KEYS.THEME) || null;
+
+  if (sessions.length === 0 && attempts.length === 0 && fcProgress.length === 0) {
+    showToast('No study data to export.', 'info');
+    return;
+  }
+
+  const exportData = {
+    app: 'StudyMate AI',
+    version: '4.0.0',
+    schemaVersion: 1,
+    exportDate: new Date().toISOString(),
+    data: {
+      sessions: sessions,
+      quizAttempts: attempts,
+      flashcardProgress: fcProgress,
+      preferences: preferences,
+      theme: theme
+    }
+  };
+
+  const jsonStr = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const fileName = `studymate-backup-${dateStr}.json`;
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  showToast(`Study data exported as ${fileName}`, 'success');
+}
+
+/**
+ * Import study data from a JSON file.
+ * @param {File} file
+ */
+function importStudyData(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const importData = JSON.parse(e.target.result);
+
+      // Validate structure
+      if (!importData || !importData.app || importData.app !== 'StudyMate AI') {
+        showToast('Invalid backup file: not a StudyMate AI export.', 'error');
+        return;
+      }
+      if (!importData.data) {
+        showToast('Invalid backup file: missing data section.', 'error');
+        return;
+      }
+
+      const imported = importData.data;
+      const importedSessions = Array.isArray(imported.sessions) ? imported.sessions : [];
+      const importedAttempts = Array.isArray(imported.quizAttempts) ? imported.quizAttempts : [];
+      const importedFcProgress = Array.isArray(imported.flashcardProgress) ? imported.flashcardProgress : [];
+
+      // Ask merge or replace
+      showModal({
+        title: 'Import Study Data',
+        message: `This backup contains ${importedSessions.length} session(s), ${importedAttempts.length} quiz attempt(s), and ${importedFcProgress.length} flashcard progress record(s).\n\nDo you want to merge with your existing data or replace it entirely?`,
+        confirmText: 'Merge Data',
+        cancelText: 'Replace All',
+        isDanger: false,
+        iconType: 'info',
+        onConfirm: () => {
+          mergeImportedData(importedSessions, importedAttempts, importedFcProgress);
+        },
+        onCancel: () => {
+          replaceWithImportedData(importedSessions, importedAttempts, importedFcProgress);
+        }
+      });
+
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast('Failed to parse the backup file. Please check the file format.', 'error');
+    }
+  };
+  reader.onerror = () => {
+    showToast('Failed to read the backup file.', 'error');
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * Merge imported data with existing data, avoiding duplicates by sessionId/attemptId.
+ */
+function mergeImportedData(importedSessions, importedAttempts, importedFcProgress) {
+  const existingSessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const existingAttempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  const existingFcProgress = StorageManager.readJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, []);
+
+  const existingSessionIds = new Set(existingSessions.map(s => s.sessionId));
+  const existingAttemptIds = new Set(existingAttempts.map(a => a.attemptId));
+  const existingFcSessionIds = new Set(existingFcProgress.map(p => p.sessionId));
+
+  let addedSessions = 0;
+  let addedAttempts = 0;
+  let addedProgress = 0;
+
+  importedSessions.forEach(s => {
+    if (s.sessionId && !existingSessionIds.has(s.sessionId)) {
+      existingSessions.push(s);
+      addedSessions++;
+    }
+  });
+
+  importedAttempts.forEach(a => {
+    if (a.attemptId && !existingAttemptIds.has(a.attemptId)) {
+      existingAttempts.push(a);
+      addedAttempts++;
+    }
+  });
+
+  importedFcProgress.forEach(p => {
+    if (p.sessionId && !existingFcSessionIds.has(p.sessionId)) {
+      existingFcProgress.push(p);
+      addedProgress++;
+    }
+  });
+
+  // Sort sessions by date descending
+  existingSessions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  existingAttempts.sort((a, b) => new Date(b.attemptDate).getTime() - new Date(a.attemptDate).getTime());
+
+  StorageManager.writeJSON(STORAGE_KEYS.SESSIONS, existingSessions);
+  StorageManager.writeJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, existingAttempts);
+  StorageManager.writeJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, existingFcProgress);
+
+  showToast(`Merged: +${addedSessions} sessions, +${addedAttempts} quiz attempts, +${addedProgress} flashcard records.`, 'success');
+}
+
+/**
+ * Replace all existing data with imported data.
+ */
+function replaceWithImportedData(importedSessions, importedAttempts, importedFcProgress) {
+  StorageManager.writeJSON(STORAGE_KEYS.SESSIONS, importedSessions);
+  StorageManager.writeJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, importedAttempts);
+  StorageManager.writeJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, importedFcProgress);
+
+  showToast(`Imported: ${importedSessions.length} sessions, ${importedAttempts.length} quiz attempts, ${importedFcProgress.length} flashcard records.`, 'success');
+}
+
+/* ============================================================================
+   PHASE 4: DATA MANAGEMENT ACTIONS
+   ============================================================================ */
+
+/**
+ * Reset all quiz scores/attempts from storage.
+ */
+function resetQuizProgress() {
+  const attempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  if (attempts.length === 0) {
+    showToast('No quiz scores to reset.', 'info');
+    return;
+  }
+
+  showModal({
+    title: 'Reset Quiz Scores?',
+    message: `This will permanently delete all ${attempts.length} quiz attempt(s) and reset quiz scores on all sessions. This action cannot be undone.`,
+    confirmText: 'Reset Quiz Scores',
+    cancelText: 'Cancel',
+    isDanger: true,
+    iconType: 'warning',
+    onConfirm: () => {
+      StorageManager.removeKey(STORAGE_KEYS.QUIZ_ATTEMPTS);
+
+      // Also clear quizScore from all sessions
+      const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+      sessions.forEach(s => { s.quizScore = null; });
+      StorageManager.writeJSON(STORAGE_KEYS.SESSIONS, sessions);
+
+      showToast('All quiz scores reset.', 'info');
+    }
+  });
+}
+
+/**
+ * Reset all flashcard progress from storage.
+ */
+function resetFlashcardProgress() {
+  const progress = StorageManager.readJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, []);
+  if (progress.length === 0) {
+    showToast('No flashcard progress to reset.', 'info');
+    return;
+  }
+
+  showModal({
+    title: 'Reset Flashcard Progress?',
+    message: 'This will permanently delete all flashcard classification progress. This action cannot be undone.',
+    confirmText: 'Reset Flashcard Progress',
+    cancelText: 'Cancel',
+    isDanger: true,
+    iconType: 'warning',
+    onConfirm: () => {
+      StorageManager.removeKey(STORAGE_KEYS.FLASHCARD_PROGRESS);
+
+      // Also clear flashcardProgress from all sessions
+      const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+      sessions.forEach(s => { s.flashcardProgress = {}; });
+      StorageManager.writeJSON(STORAGE_KEYS.SESSIONS, sessions);
+
+      showToast('All flashcard progress reset.', 'info');
+    }
+  });
+}
+
+/**
+ * Clear ALL study data (sessions, quiz attempts, flashcard progress).
+ */
+function clearAllStudyData() {
+  const sessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
+  const attempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  const progress = StorageManager.readJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, []);
+
+  const total = sessions.length + attempts.length + progress.length;
+  if (total === 0) {
+    showToast('No study data to clear.', 'info');
+    return;
+  }
+
+  showModal({
+    title: 'Wipe All Study Data?',
+    message: `This will permanently delete ALL study data:\n\u2022 ${sessions.length} session(s)\n\u2022 ${attempts.length} quiz attempt(s)\n\u2022 ${progress.length} flashcard record(s)\n\nThis action cannot be undone. Your settings and API key will not be affected.`,
+    confirmText: 'Wipe All Study Data',
+    cancelText: 'Cancel',
+    isDanger: true,
+    iconType: 'warning',
+    onConfirm: () => {
+      StorageManager.removeKey(STORAGE_KEYS.SESSIONS);
+      StorageManager.removeKey(STORAGE_KEYS.QUIZ_ATTEMPTS);
+      StorageManager.removeKey(STORAGE_KEYS.FLASHCARD_PROGRESS);
+
+      AppState.activeSessionId = null;
+      AppState.isRestoredSession = false;
+
+      showToast('All study data has been permanently deleted.', 'info');
+    }
+  });
 }
 
 /* ============================================================================

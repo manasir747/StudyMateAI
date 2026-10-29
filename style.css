@@ -2913,3 +2913,405 @@ a {
   }
 }
 
+
+/* ==========================================================================
+   PHASE 4: HISTORY, ANALYTICS & DATA MANAGEMENT STYLES
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   4-1. HISTORY LIST GRID & SESSION CARDS
+   -------------------------------------------------------------------------- */
+.history-list-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-16);
+}
+
+@media (min-width: 768px) {
+  .history-list-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.history-session-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-20);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.history-session-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.history-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.history-card-topic {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.history-card-date {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.history-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.history-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-8);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  line-height: 1.5;
+}
+
+.history-badge.ai {
+  background-color: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.history-badge.demo {
+  background-color: var(--info-bg);
+  color: var(--info);
+  border: 1px solid var(--info-border);
+}
+
+.history-badge.difficulty {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.history-badge.score {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.history-badge.score-high {
+  background-color: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.history-badge.score-mid {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+}
+
+.history-badge.score-low {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.history-badge.flashcard-progress {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+}
+
+.history-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-top: auto;
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.history-card-actions .btn {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   4-2. HISTORY SORT WRAPPER
+   -------------------------------------------------------------------------- */
+.history-sort-wrapper {
+  min-width: 180px;
+}
+
+/* --------------------------------------------------------------------------
+   4-3. CHART RENDER WRAPPER & SVG CHART
+   -------------------------------------------------------------------------- */
+.chart-render-wrapper {
+  width: 100%;
+  min-height: 250px;
+  padding: var(--space-16);
+  position: relative;
+}
+
+.chart-bar-group {
+  transition: opacity var(--transition-fast);
+}
+
+.chart-bar-group:hover {
+  opacity: 0.85;
+}
+
+.chart-tooltip {
+  position: absolute;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-8) var(--space-12);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.chart-tooltip.visible {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   4-4. TOPIC PERFORMANCE TABLE
+   -------------------------------------------------------------------------- */
+.topic-perf-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.topic-perf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.topic-perf-table th {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: left;
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.topic-perf-table td {
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.topic-perf-table tr:last-child td {
+  border-bottom: none;
+}
+
+.topic-perf-table tr:hover td {
+  background-color: var(--bg-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   4-5. RECENT ACTIVITY LIST
+   -------------------------------------------------------------------------- */
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-icon.session {
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+}
+
+.activity-icon.quiz {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.activity-icon.flashcard {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.activity-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.activity-time {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+}
+
+.activity-detail {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* --------------------------------------------------------------------------
+   4-6. EMPTY STATE COMPACT
+   -------------------------------------------------------------------------- */
+.empty-state-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-24) var(--space-16);
+  gap: var(--space-8);
+}
+
+.empty-state-compact .empty-icon {
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.empty-state-compact .empty-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.empty-state-compact .empty-description {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   4-7. DATA MANAGEMENT BUTTON & ACTIONS GRID
+   -------------------------------------------------------------------------- */
+.data-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-16);
+}
+
+@media (min-width: 768px) {
+  .data-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4-8. RESPONSIVE ADJUSTMENTS FOR PHASE 4
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .history-list-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topic-perf-table-wrapper {
+    margin-left: calc(-1 * var(--space-16));
+    margin-right: calc(-1 * var(--space-16));
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .chart-render-wrapper {
+    padding: var(--space-8);
+    min-height: 200px;
+  }
+
+  .history-card-header {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .history-card-topic {
+    white-space: normal;
+  }
+
+  .data-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-session-card {
+    padding: var(--space-16);
+  }
+
+  .history-card-actions {
+    flex-direction: column;
+  }
+
+  .history-card-actions .btn {
+    width: 100%;
+  }
+
+  .activity-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .topic-perf-table th,
+  .topic-perf-table td {
+    padding: var(--space-8) var(--space-12);
+    font-size: 0.8125rem;
+  }
+}
