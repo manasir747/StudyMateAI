@@ -1,178 +1,345 @@
-# StudyMate AI — Your Personal AI Study Assistant
+# StudyMate AI — Personal AI Study Assistant & Learning Analytics
 
-> **Phase 3: AI API Integration & Response Validation**  
-> A modern, responsive, student-centric web application engineered to transform raw lecture notes into structured summaries, multiple-choice quizzes, and interactive 3D flashcards using the Google Gemini AI API (`gemini-3.5-flash-lite`).
+> **A modern, responsive, client-side web application engineered to transform raw study notes into structured summaries, multiple-choice quizzes, 3D flashcards, and longitudinal learning analytics using the Google Gemini API (`gemini-3.5-flash-lite`) and browser LocalStorage.**
+>
+> Built strictly with **HTML5, CSS3, and Vanilla JavaScript (ES6+)** — zero external frameworks, zero npm packages, zero external CDNs, and zero backend services.
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#1-project-overview)
+2. [Key Features](#2-key-features)
+3. [Technology Stack](#3-technology-stack)
+4. [Project Architecture & File Structure](#4-project-architecture--file-structure)
+5. [LocalStorage Schema & Data Architecture](#5-localstorage-schema--data-architecture)
+6. [Quick Start Guide](#6-quick-start-guide)
+7. [Google Gemini AI Configuration](#7-google-gemini-ai-configuration)
+8. [Comprehensive User Guide](#8-comprehensive-user-guide)
+   - [A. Study Input & Generation](#a-study-input--generation)
+   - [B. Study Summary Workspace](#b-study-summary-workspace)
+   - [C. Interactive 5-Question Quiz Engine](#c-interactive-5-question-quiz-engine)
+   - [D. 3D Spaced-Repetition Flashcards](#d-3d-spaced-repetition-flashcards)
+   - [E. Persistent Study History](#e-persistent-study-history)
+   - [F. Learning Analytics & Progress Dashboard](#f-learning-analytics--progress-dashboard)
+   - [G. Data Management (Export, Import & Reset)](#g-data-management-export-import--reset)
+9. [Error Handling & Security Architecture](#9-error-handling--security-architecture)
+10. [Browser Compatibility](#10-browser-compatibility)
 
 ---
 
 ## 1. Project Overview
 
-**StudyMate AI** is designed to streamline exam preparation and study routines for students. By transforming unstructured, dense class notes into structured summaries, practice quizzes, and interactive flashcard decks, it bridges the gap between passive reading and active recall learning.
+**StudyMate AI** streamlines exam preparation and study routines for students. Transitioning from passive reading to active recall is the most scientifically proven method for long-term retention. StudyMate AI automates this transition: students simply paste their class notes, lecture transcripts, or textbook chapters to instantly receive:
 
-### Current Development Stage: Phase 3
-Building on the frontend foundation (Phase 1) and interactive learning interfaces (Phase 2), **Phase 3** connects live artificial intelligence via Google Gemini:
+1. **Curated Summaries**: Formatted paragraphs, high-yield takeaways, and concept definitions.
+2. **Practice Quizzes**: 5-question multiple-choice quizzes calibrated to a chosen difficulty level, featuring detailed explanations.
+3. **Interactive 3D Flashcards**: Spaced-repetition cards with perspective 3D flip animation, shuffle capabilities, and mastery classification.
+4. **Persistent History**: Auto-saved study sessions that can be searched, filtered, sorted, reopened, or deleted at any time.
+5. **Learning Analytics**: Visualized score trend charts, topic-wise mastery breakdowns, and real-time dashboard statistics.
 
-- **Google Gemini API Integration**: Direct client-side connection to `gemini-3.5-flash-lite` using native `fetch()` and `AbortController`.
-- **API Key Management**: Secure client-side storage in `localStorage` (`studymate_api_key`), credential masking, visibility toggling, and easy key removal with confirmation.
-- **Connection Diagnostics**: Instant one-click connection test button (`#btn-test-connection`) with visual feedback verifying API key validity and model accessibility before generating study materials.
-- **Prompt Engineering**: Highly specialized prompt instructing Gemini to return strict JSON containing formatted summary paragraphs, key takeaways, concept definitions, a 5-question multiple-choice quiz, and 6+ active recall flashcards.
-- **Strict Response Validation**: Robust client-side validation ensuring valid JSON syntax, required fields, non-empty text, exactly 5 quiz questions with 4 options each, valid answer indices (0–3), and at least 6 flashcards.
-- **Comprehensive Error Handling**: Descriptive, user-friendly error messages mapped to HTTP response codes (400, 401, 403, 404, 429, 500, 503) and 60-second network timeouts.
-- **Explicit Demo Mode**: Curated sample datasets remain available via a dedicated "Try Demo Mode" button (`#btn-demo-mode`), allowing offline or keyless testing without silent fallback on AI failure.
-- **Live Session Statistics**: Real-time tracking of study sessions generated, quizzes completed, and running arithmetic average quiz score.
+The application functions entirely client-side, communicating directly with Google's official Gemini API endpoint while storing all user sessions, quiz scores, flashcard mastery states, and preferences in the browser's `localStorage`.
 
 ---
 
-## 2. Technology Stack
+## 2. Key Features
 
-Built strictly adhering to native web standards without external libraries, packages, or build tools:
-
-- **HTML5**: Semantic document structure (`<header>`, `<nav>`, `<aside>`, `<main>`, `<section>`, `<fieldset>`, `<dialog>`), full W3C ARIA tab, radiogroup, and dialog patterns.
-- **CSS3**: CSS Custom Properties (Design Tokens) for seamless light/dark theming, CSS Grid, Flexbox, 3D perspective transforms (`rotateY`), and `@media (prefers-reduced-motion)` support.
-- **Vanilla JavaScript (ES6+)**: Pure standard modular JavaScript with strict separation of concerns, native Fetch API, `AbortController` timeouts, Blob/Clipboard APIs, and safe text injection (`textContent` and HTML escaping).
-- **Google Gemini API**: Uses the official REST endpoint `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent` with `responseMimeType: "application/json"`.
-- **System Font Stack**: High-performance system fonts (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto...`) eliminating external network delays.
-- **Native Inline SVGs**: Scalable vector icons embedded directly into HTML/CSS without external icon CDNs (e.g., FontAwesome, Lucide).
+- **Live AI Generation via Google Gemini**: Connects directly to Google's official `gemini-3.5-flash-lite` model using native browser `fetch()` and `AbortController`.
+- **Curated Demo Mode**: Includes offline, built-in sample datasets (Data Structures, Operating Systems, DBMS, Computer Networks, JavaScript, and General Knowledge) allowing complete testing without an API key.
+- **Strict Response Validation**: Robust parsing layer that verifies JSON structure, required keys, non-empty text, question count, and option limits before rendering.
+- **Persistent Study History**: Automatically saves generated sessions with topic, original notes, difficulty, summary style, quiz state, and flashcard progress. Supports keyword search, difficulty filtering, and chronological sorting.
+- **Full Session Restoration**: Reopen any past session from history with a single click, restoring the exact summary, quiz questions, and flashcard deck into the active workspace.
+- **Learning Analytics & Progress Dashboard**:
+  - Total study sessions completed and quizzes taken.
+  - Overall average quiz score and personal best score.
+  - Total flashcards reviewed and overall deck mastery percentage.
+  - Dynamic SVG quiz score trend bar chart with score-based color coding.
+  - Topic-wise performance table grouping sessions by subject.
+  - Chronological recent activity feed.
+- **Complete Data Portability**:
+  - Export all study sessions, quiz attempts, flashcard progress, and preferences as a clean JSON backup file.
+  - Import existing backup files with schema validation and choose between **Merging** or **Replacing** data.
+  - API keys are **never** included in export files to protect student credentials.
+- **Responsive & Accessible Design**:
+  - Theme switching (Light & Dark modes) powered by CSS Custom Properties (Tokens).
+  - Clean collapsible navigation drawer for mobile and tablet screens.
+  - Native accessible dialogs (`<dialog>`), ARIA tabs, live character counters, and animated toast notifications.
 
 ---
 
-## 3. Project File Structure
+## 3. Technology Stack
+
+StudyMate AI is engineered strictly adhering to native web standards without external libraries, packages, or build tools:
+
+| Layer | Technology | Details |
+| :--- | :--- | :--- |
+| **Markup** | **HTML5** | Semantic structure (`<header>`, `<nav>`, `<aside>`, `<main>`, `<section>`, `<dialog>`), W3C ARIA tab/dialog roles, responsive `<meta>` viewport. |
+| **Styling** | **CSS3** | CSS Custom Properties (Design Tokens), Flexbox, CSS Grid, 3D perspective transforms (`rotateY`), `@media (prefers-reduced-motion)` support. |
+| **Logic** | **Vanilla JavaScript (ES6+)** | Strict mode (`'use strict'`), modular state management (`AppState`), StorageManager CRUD utility, dynamic SVG charting. |
+| **AI Integration** | **Google Gemini REST API** | Direct endpoint connection to `gemini-3.5-flash-lite:generateContent` using native `fetch()` and `AbortController`. |
+| **Persistence** | **Web Storage API** | Browser `localStorage` for versioned sessions, quiz attempts, flashcard classifications, and settings. |
+| **Assets** | **Native Inline SVGs** | Zero external icon CDNs (FontAwesome, Lucide, etc.). All icons are embedded vector elements. |
+| **Typography** | **System Font Stack** | High-performance native system typography (`-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, `Roboto`) eliminating font network requests. |
+
+---
+
+## 4. Project Architecture & File Structure
 
 ```text
 StudyMateAI/
-├── index.html        # Complete semantic HTML5 structure for dashboard, tabs, modals, & toast
-├── style.css         # Design system tokens, light/dark themes, 3D flip card, & responsive styles
-├── script.js         # Modular JavaScript engine: Gemini AI client, prompt builder, quiz, & flashcards
-└── README.md         # Comprehensive project documentation and developer guide
+├── index.html        # Complete semantic HTML5 structure: top navigation, sidebar,
+│                     # dashboard, history, progress analytics, settings, about,
+│                     # accessible modal dialogs, and toast notification container.
+├── style.css         # Comprehensive CSS design system: light/dark color tokens,
+│                     # typography, layout grids, 3D flip card animations, SVG chart,
+│                     # topic performance tables, and responsive mobile breakpoints.
+├── script.js         # Modular Vanilla JavaScript engine: AppState, Gemini API client,
+│                     # prompt builder, response validator, quiz engine, 3D flashcards,
+│                     # StorageManager CRUD, history renderer, and analytics chart.
+└── README.md         # Comprehensive project documentation and developer guide.
 ```
 
 ---
 
-## 4. How to Run the Application
+## 5. LocalStorage Schema & Data Architecture
 
-Because StudyMate AI uses pure native web technologies, no installation, bundler, or Node.js runtime is required.
+All persistent data is managed through a central `StorageManager` object in `script.js` that wraps read/write operations in safe `try/catch` blocks.
 
-### Method 1: VS Code Live Server (Recommended)
-1. Open the `StudyMateAI` project folder in **Visual Studio Code**.
-2. If you don't already have it installed, install the **Live Server** extension by *Ritwick Dey* from the Extensions marketplace (`Ctrl+Shift+X` / `Cmd+Shift+X`).
-3. Right-click on `index.html` in the file explorer and select **Open with Live Server**.
-4. The application will launch in your default browser at `http://127.0.0.1:5500/index.html`.
+### Storage Keys
 
-### Method 2: Direct Browser Execution
-1. Navigate to the `StudyMateAI` directory in your file manager (Finder on macOS or Explorer on Windows).
-2. Double-click `index.html` or drag and drop it into any modern web browser (Google Chrome, Microsoft Edge, Mozilla Firefox, Apple Safari).
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `studymate_sessions_v1` | `Array<Object>` | Array of up to 50 saved study sessions. |
+| `studymate_quiz_attempts_v1` | `Array<Object>` | Array of up to 200 completed quiz attempts. |
+| `studymate_flashcard_progress_v1` | `Array<Object>` | Per-session flashcard classification records. |
+| `studymate_theme` | `String` | Selected theme preference (`'light'` or `'dark'`). |
+| `studymate_preferences` | `Object` | Default difficulty, default summary style, flashcard animation. |
+| `studymate_api_key` | `String` | Encrypted/masked client-side Gemini API key. |
+
+### Data Structures
+
+#### 1. Study Session (`studymate_sessions_v1`)
+```json
+{
+  "sessionId": "sess-1730300000000-a1b2c3",
+  "topic": "Operating Systems - Memory Management",
+  "notes": "Paging is a memory management scheme that eliminates...",
+  "difficulty": "Medium",
+  "style": "Simple Explanation",
+  "isAI": true,
+  "model": "gemini-3.5-flash-lite",
+  "material": {
+    "summaryParagraphs": ["Paragraph 1...", "Paragraph 2...", "Paragraph 3..."],
+    "takeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3", "Takeaway 4"],
+    "concepts": [
+      { "term": "Paging", "definition": "A memory allocation technique..." },
+      { "term": "Page Fault", "definition": "An interrupt that occurs when..." }
+    ]
+  },
+  "quiz": [
+    {
+      "question": "What is the primary purpose of virtual memory?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctIndex": 1,
+      "explanation": "Virtual memory allows the OS to..."
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "card-1",
+      "front": "What is thrashing in an OS?",
+      "back": "A condition where excessive paging leads to..."
+    }
+  ],
+  "createdAt": "2026-10-30T17:30:00.000Z",
+  "quizScore": 80,
+  "flashcardProgress": {
+    "card-1": "known",
+    "card-2": "not-known"
+  }
+}
+```
+
+#### 2. Quiz Attempt (`studymate_quiz_attempts_v1`)
+```json
+{
+  "attemptId": "att-1730300050000-x9y8",
+  "sessionId": "sess-1730300000000-a1b2c3",
+  "topic": "Operating Systems - Memory Management",
+  "score": 4,
+  "totalQuestions": 5,
+  "percentage": 80,
+  "correctAnswers": [0, 1, 2, 4],
+  "incorrectAnswers": [3],
+  "attemptDate": "2026-10-30T17:35:00.000Z"
+}
+```
 
 ---
 
-## 5. Configuring Google Gemini AI
+## 6. Quick Start Guide
+
+Because StudyMate AI relies purely on native web standards, it requires no Node.js runtime, build steps, or package managers.
+
+### Method 1: VS Code Live Server (Recommended)
+1. Open the `StudyMateAI` folder in **Visual Studio Code**.
+2. Install the **Live Server** extension by *Ritwick Dey* (if not already installed).
+3. Right-click on `index.html` in the file explorer and select **Open with Live Server**.
+4. The application opens automatically in your default browser at `http://127.0.0.1:5500/index.html`.
+
+### Method 2: Direct File Execution
+1. Open the project folder in your operating system's file manager (Finder or File Explorer).
+2. Double-click `index.html` to open it in any modern browser (Google Chrome, Microsoft Edge, Mozilla Firefox, Apple Safari).
+
+---
+
+## 7. Google Gemini AI Configuration
 
 To generate dynamic study materials from your own custom notes:
 
-### 1. Obtain a Free Google Gemini API Key
+### 1. Obtain a Free Gemini API Key
 1. Visit [Google AI Studio](https://aistudio.google.com/).
-2. Sign in with your Google account.
-3. Click **Get API key** and create a new key.
-4. Copy the generated key (typically starts with `AIzaSy...`).
+2. Sign in with your Google Account.
+3. Click **Get API key** and generate a new key.
+4. Copy the resulting key (typically starting with `AIzaSy...`).
 
-### 2. Enter and Save the Key in StudyMate AI
-1. In the application sidebar or mobile menu, navigate to **Settings**.
-2. Under **AI Provider Configuration**, paste your API key into the **Gemini API Key** field.
-3. Click **Save API Key**. The key is securely saved to your browser's `localStorage` (`studymate_api_key`) and the configuration status badge updates to **Configured (Gemini 3.5 Flash-Lite)**.
-4. Click **Test Connection** to immediately verify your key against Google Gemini. A green confirmation banner indicates that the model is ready.
+### 2. Enter and Test Key in StudyMate AI
+1. In the sidebar, click **Settings**.
+2. Under **AI Provider Configuration**, paste your API key into the input field.
+3. Click **Save API Key**. The key is stored locally in `localStorage` under `studymate_api_key`.
+4. Click **Test Connection**. The application dispatches a live test request to verify that the key has access to the official `gemini-3.5-flash-lite` model. A green feedback banner will confirm operational readiness.
 
-### 3. Security Considerations
-- **Client-Side Storage**: The API key is stored exclusively in your browser's `localStorage`. It is never transmitted to any third-party server other than directly to Google's official Gemini endpoint.
-- **Public Computers**: Do not store personal API keys on shared or public workstations. Click **Remove Key** in Settings before leaving a shared machine.
-- **No Hardcoded Keys**: The application repository contains zero hardcoded API keys.
-
----
-
-## 6. How to Generate Study Material
-
-### Option A: Generate with AI (Google Gemini)
-1. **Enter Study Topic (Optional)**: Type the subject of study in the topic input field (e.g., `Thermodynamics`, `Cell Biology`, `Quantum Computing`).
-2. **Paste Study Notes**: Paste lecture notes, textbook excerpts, or revision points into the notes textarea (up to 10,000 characters with live character counter).
-3. **Select Quiz Difficulty**:
-   - **Easy**: Fundamental terminology and core definitions.
-   - **Medium**: Standard conceptual applications and mechanics.
-   - **Hard**: Architectural nuances, edge cases, and complex scenarios.
-4. **Select Summary Style**:
-   - **Simple Explanation**: Everyday analogies and straightforward English.
-   - **Exam-Focused**: Formulas, high-yield bullet points, and key rules.
-   - **Detailed Notes**: In-depth textbook-style hierarchy and technical analysis.
-5. **Click "Generate with AI"**:
-   - JavaScript validates note length and verifies API key configuration.
-   - The button enters a loading state (`Generating with AI...` with animated spinner).
-   - An asynchronous POST request is dispatched to Google Gemini (`gemini-3.5-flash-lite`).
-   - The JSON response is parsed, validated, and normalized into application state.
-   - The workspace smoothly scrolls into view with active **Summary**, **Quiz**, and **Flashcards** tabs.
-
-### Option B: Try Demo Mode (Sample Data)
-- If you don't have an API key or want to test the application offline, click **Try Demo Mode**.
-- The application automatically matches your topic and notes against curated Computer Science knowledge sets (Data Structures, OS, DBMS, Networks, JavaScript, or a General Fallback) and renders complete sample materials immediately without network requests.
-- All demo outputs are clearly badged as `Demo Mode — Sample Study Material`.
+### 3. Client-Side Security Notice
+- The API key is stored exclusively in your local browser storage. It is never transmitted to any third-party server, tracking endpoint, or remote database.
+- It is transmitted strictly between your browser and Google's official API endpoint (`generativelanguage.googleapis.com`).
+- On shared or public workstations, click **Remove Key** in Settings when your study session is complete.
 
 ---
 
-## 7. Interactive Learning Features
+## 8. Comprehensive User Guide
 
-### A. Summary Tab
-- **Structured Reading**: Executive overview, formatted paragraphs, key takeaways with checkmark indicators, and core concept definition cards.
-- **Source Badge**: Identifies whether the material was generated via `AI Generated (Gemini 3.5 Flash-Lite)` or `Demo Mode`.
-- **Copy Summary**: Extracts formatted plain text and copies it to the system clipboard using `navigator.clipboard.writeText` (with an automatic fallback for restricted environments).
-- **Download Summary**: Generates a downloadable text file (`[topic]-summary.txt`) using the HTML5 `Blob` and `URL.createObjectURL` APIs.
+### A. Study Input & Generation
 
-### B. Interactive Quiz Engine
-- **5 Questions Per Quiz**: Generated specifically to match the selected difficulty level.
-- **Bidirectional Navigation**: "Previous" and "Next" controls, alongside quick-jump indicator dots (1 to 5).
-- **Persistent Answer State**: Answers remain selected when navigating back and forth across questions.
-- **Submission Safeguards**: If submitted with unanswered questions, a modal dialog warns the user and gives the option to review or proceed.
-- **Scoring Formula**:
-  $$\text{Score Percentage} = \left(\frac{\text{Correct Answers}}{\text{Total Questions}}\right) \times 100$$
-- **Results & Review**:
-  - Score badge, percentage, and qualitative performance evaluation.
-  - Question-by-question review highlighting the user's answer (green for correct, red for incorrect), the actual correct answer, and an in-depth explanation box.
-- **Retake Quiz**: Clears previous selections, restores question 1, and allows a fresh re-attempt without duplicate stats counting.
+1. **Topic (Optional)**: Enter a topic name (e.g., `Distributed Systems`, `Organic Chemistry`).
+2. **Notes Area**: Paste or type lecture notes, textbook excerpts, or revision points (up to 10,000 characters). A live character counter monitors input length and warns when approaching capacity.
+3. **Difficulty Selection**:
+   - **Easy**: Focuses on core definitions, foundational recall, and basic terms.
+   - **Medium**: Balances conceptual understanding, mechanics, and standard applications.
+   - **Hard**: Emphasizes edge cases, architectural trade-offs, and complex scenarios.
+4. **Summary Style Selection**:
+   - **Simple Explanation**: Everyday analogies and accessible language.
+   - **Exam-Focused**: High-yield takeaways, formulas, bullet points, and critical facts.
+   - **Detailed Notes**: In-depth academic hierarchy with technical definitions.
+5. **Generation Modes**:
+   - **Generate with AI**: Sends the notes to Google Gemini (`gemini-3.5-flash-lite`), parses the structured JSON response, saves the session to LocalStorage, and renders the workspace.
+   - **Try Demo Mode**: Instantly generates study material using curated local datasets without requiring an API key or internet access.
 
-### C. Interactive 3D Flashcards
-- **Realistic 3D Flip**: Click or press `Space` / `Enter` on a focused card to trigger a smooth 180° CSS perspective flip.
-- **Spaced Repetition Tracking**:
+### B. Study Summary Workspace
+
+- **Executive Paragraphs**: Formatted, readable synthesis of the notes according to the chosen style.
+- **Key Takeaways**: High-yield bullet points marked with clear visual indicators.
+- **Core Concepts Grid**: Dedicated cards detailing key terms and their precise definitions.
+- **Copy Summary**: Copies the full formatted summary to your system clipboard with one click.
+- **Download Summary**: Generates and downloads a structured `.txt` document named `[Topic]-summary.txt`.
+
+### C. Interactive 5-Question Quiz Engine
+
+- **Curated 5-Question Sets**: Formatted with 4 options each, matching the selected difficulty level.
+- **Bidirectional Navigation**: Navigate freely across questions using "Previous" and "Next" controls or direct-jump progress dots (1–5).
+- **Persistent Answer Selection**: Choices remain locked in place as you move through questions.
+- **Submission Protection**: If submitted while questions remain unanswered, an accessible dialog warns the user and offers the choice to review or submit.
+- **Interactive Results Review**:
+  - Score badge displaying percentage and number of correct answers.
+  - Detailed breakdown highlighting selected answers (green for correct, red for incorrect), correct answer indicators, and in-depth explanations for every question.
+- **Retake Quiz**: Allows a clean re-attempt without resetting or overwriting the original study session.
+
+### D. 3D Spaced-Repetition Flashcards
+
+- **Perspective 3D Flip**: Click anywhere on a card or press `Space` / `Enter` on keyboard focus to trigger a 180° CSS 3D flip transform.
+- **Self-Assessment Tracking**:
   - **Mark as Known** (`✓ Known` badge).
   - **Needs Review** (`⚠️ Needs Review` badge).
-  - Classification counts update dynamically without duplicate counting if reclassified.
-  - Live deck summary: `Card X of N | Known: K | Review: R | Unclassified: U`.
-- **Shuffle Deck**: Implements the Fisher-Yates algorithm to randomize card order while preserving individual card classifications.
-- **Navigation**: "Previous Card" and "Next Card" buttons; flipping automatically resets to the front face on card change.
+- **Deck Summary Counter**: Displays live mastery counts: `Card X of N | Known: K | Review: R | Unclassified: U`.
+- **Shuffle Deck**: Randomizes deck order using the Fisher-Yates algorithm while preserving existing classification states.
 
-### D. Dashboard Quick Statistics
-Updated in real-time in JavaScript application state:
-- **Study Sessions**: Increments each time new study material is generated.
-- **Quizzes Completed**: Increments on the first submission of each unique quiz attempt.
-- **Average Quiz Score**: Calculated as the arithmetic mean of percentage scores across completed quizzes.
+### E. Persistent Study History
+
+Navigate to the **History** section in the sidebar to review all past study sessions:
+- **Search**: Search sessions in real-time by topic or notes content.
+- **Difficulty Filter**: Filter sessions by difficulty (`All`, `Easy`, `Medium`, `Hard`).
+- **Sort**: Order sessions by `Newest First` or `Oldest First`.
+- **Session Cards**: Display session title, creation date, badge indicators (`AI Generated` vs `Demo Mode`, difficulty, quiz score, flashcards reviewed).
+- **Reopen Session**: Restores the session directly into the active dashboard workspace with summaries, quizzes, and flashcards ready for revision.
+- **Delete Session**: Removes an individual session and its associated quiz/flashcard records after confirmation.
+- **Clear All History**: Wipes all saved sessions in bulk with a modal confirmation safeguard.
+
+### F. Learning Analytics & Progress Dashboard
+
+Navigate to the **Progress** section in the sidebar for full study analytics:
+- **Quick Statistics Cards**:
+  - Total Study Sessions Completed.
+  - Total Quiz Attempts.
+  - Overall Average Quiz Score across all attempts.
+  - Personal Best Quiz Score.
+  - Total Flashcards Reviewed.
+  - Overall Flashcard Mastery Percentage.
+- **Quiz Score Trend Chart**:
+  - Native inline SVG bar chart illustrating the percentage scores of your recent quiz attempts.
+  - Color-coded bars (Green: $\ge 80\%$, Amber: $60\% - 79\%$, Red: $< 60\%$).
+  - Clean Y-axis grid lines and hover tooltips showing score details.
+- **Topic-Wise Performance Breakdown**: Table aggregating sessions, average quiz score, personal best score, and flashcard mastery by topic.
+- **Recent Activity Feed**: Chronological stream of recent study sessions and quiz submissions with timestamps.
+
+### G. Data Management (Export, Import & Reset)
+
+Navigate to **Settings** to access complete data portability tools:
+- **Export Study Data**: Downloads a timestamped JSON backup file (`studymate-backup-YYYY-MM-DD.json`) containing all sessions, quiz attempts, flashcard progress, and preferences. *(Your API key is never included in the backup).*
+- **Import Study Data**: Uploads an existing backup file. A prompt asks whether you wish to **Merge** with your current data (avoiding duplicates) or **Replace** all existing data.
+- **Clear Study History**: Deletes all saved sessions while preserving quiz scores and preferences.
+- **Reset Quiz Scores**: Clears all quiz attempt records and resets average/best score counters.
+- **Reset Flashcard Progress**: Clears all flashcard classification records.
+- **Wipe All Study Data**: Cleans all sessions, quiz attempts, and flashcards in one action (with danger modal confirmation).
+- **Reset Preferences to Defaults**: Restores default theme, difficulty, and summary styles without altering study history.
 
 ---
 
-## 8. Error Handling & Resilience
+## 9. Error Handling & Security Architecture
 
-StudyMate AI includes extensive error handling to guarantee a smooth user experience under all conditions:
+### API Resilience Matrix
 
-| Scenario | Application Behavior |
-| :--- | :--- |
-| **Missing API Key** | Modal dialog guides the user to Settings or offers to use Demo Mode. No silent errors. |
-| **Invalid API Key (HTTP 400)** | Clear error alert directing the user to verify their key at `aistudio.google.com`. |
-| **Permission Denied (HTTP 403)** | Explains that the key lacks permission for the `gemini-3.5-flash-lite` model. |
-| **Rate Limit / Quota (HTTP 429)** | Alerts user that Google AI Studio free tier quota was reached and advises waiting. |
-| **Network Timeout (60s)** | AbortController terminates slow requests and notifies user of connection timeout. |
-| **Malformed AI Response** | Strict schema validator catches incomplete JSON and displays diagnostic details. |
-| **API Failure Fallback Policy** | The application **never** silently substitutes sample data on AI failure; it displays the exact error so students always know the true origin of their study materials. |
+| Error Scenario | HTTP Code / Trigger | User Feedback | Recovery Action |
+| :--- | :---: | :--- | :--- |
+| **Missing API Key** | Pre-flight check | Informative modal dialog | Direct link to Settings or option to use Demo Mode. |
+| **Invalid Key** | HTTP 400 | Warning modal & toast | Directs user to verify their key at Google AI Studio. |
+| **Permission Denied** | HTTP 403 | Warning modal & toast | Alerts user that key lacks permission for the model. |
+| **Endpoint Missing** | HTTP 404 | Warning modal & toast | Confirms status of `gemini-3.5-flash-lite` model. |
+| **Quota Exceeded** | HTTP 429 | Warning modal & toast | Advises user that free-tier quota is reached; suggests waiting. |
+| **Network Timeout** | 60 seconds (`AbortController`) | Error modal & toast | Aborts stalled request cleanly without hanging the UI. |
+| **Malformed Response** | Invalid JSON / Schema failure | Diagnostic modal & toast | Details schema mismatch; never injects corrupted data. |
+
+### Client-Side Security Guarantees
+1. **Zero External Data Leaks**: Notes and topics are transmitted strictly to Google's official Gemini endpoint.
+2. **Key Isolation**: The Gemini API key is isolated in `localStorage` under `studymate_api_key` and is excluded from JSON export files and crash logs.
+3. **XSS Protection**: All user input, notes, and AI-generated text are escaped using HTML entity replacement (`&`, `<`, `>`, `"`, `'`) before being rendered into the DOM.
+4. **No Silent Fallbacks**: On AI failure, the application displays the exact error encountered rather than silently serving mock data, ensuring students always know the true origin of their study materials.
 
 ---
 
-## 9. Phased Development Roadmap
+## 10. Browser Compatibility
 
-| Phase | Milestone | Status | Key Deliverables |
-| :--- | :--- | :---: | :--- |
-| **Phase 1** | **Project Foundation & UI Development** | **Completed** | Full responsive layout, design system, theme switching, accessible tabs, character counting, and validation. |
-| **Phase 2** | **Study Material Generation & Interactive Learning** | **Completed** | Sample study material generator, summary copy/download, 5-question multi-choice quiz engine, 3D flashcards with mastery tracking. |
-| **Phase 3** | **Google Gemini AI Integration** | **Completed** | Live client-side connection to Google Gemini API (`gemini-3.5-flash-lite`), key management, connection testing, schema validation, and error handling. |
-| **Phase 4** | **History & Learning Analytics** | *Scheduled Next* | LocalStorage persistence engine, searchable study history, score trend charts, and export tools. |
+StudyMate AI is built using cross-browser standard web APIs:
+
+| Browser | Minimum Version | Status |
+| :--- | :---: | :---: |
+| **Google Chrome** | 80+ | Fully Supported |
+| **Microsoft Edge** | 80+ | Fully Supported |
+| **Mozilla Firefox** | 75+ | Fully Supported |
+| **Apple Safari** | 13.1+ | Fully Supported |
+| **Mobile Safari (iOS)** | 13.4+ | Fully Supported |
+| **Chrome for Android** | 80+ | Fully Supported |
+
+---
+
+## Academic Context
+
+*This project was developed as part of the B.Tech Semester 3 Web Technology curriculum, focusing on standard-compliant, dependency-free web engineering, accessible UI architectures, client-side persistence, and AI API integration.*
