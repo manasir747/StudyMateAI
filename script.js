@@ -1120,18 +1120,6 @@ function initializeApp() {
   initializeHistory(); // Phase 4: History event listeners
   updateDashboardStats();
 
-  // Phase 4: Load persisted stats into in-memory counters on startup
-  const storedSessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
-  const storedAttempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
-  AppState.stats.sessionsCount = storedSessions.length;
-  AppState.stats.quizzesCount = storedAttempts.length;
-  if (storedAttempts.length > 0) {
-    AppState.stats.quizScores = storedAttempts.map(a => a.percentage || 0);
-    const sum = AppState.stats.quizScores.reduce((acc, val) => acc + val, 0);
-    AppState.stats.averageScore = Math.round(sum / AppState.stats.quizScores.length);
-  }
-  updateDashboardStats();
-
   handleInitialHash();
 }
 
@@ -1307,8 +1295,10 @@ function switchSection(sectionId, updateHistory = true) {
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  // Phase 4: Refresh data-driven sections when navigated to
-  if (sectionId === 'history') {
+  // Refresh data-driven sections when navigated to
+  if (sectionId === 'dashboard') {
+    updateDashboardStats();
+  } else if (sectionId === 'history') {
     renderHistoryList();
   } else if (sectionId === 'progress') {
     renderProgressDashboard();
@@ -1447,6 +1437,7 @@ function initializeCharacterCounter() {
   const charCountEl = document.getElementById('char-count');
   const counterContainer = document.getElementById('char-counter-display');
   const validationAlert = document.getElementById('input-error-alert');
+  const validationText = document.getElementById('input-error-text');
 
   if (!notesInput || !charCountEl) return;
 
@@ -1465,8 +1456,13 @@ function initializeCharacterCounter() {
       counterContainer.classList.toggle('limit-reached', currentLength >= AppState.maxNoteLength);
     }
 
-    if (currentLength > 0 && validationAlert && !validationAlert.hasAttribute('hidden')) {
-      validationAlert.setAttribute('hidden', '');
+    // Immediately hide empty notes validation message when non-whitespace text is entered
+    const trimmed = notesInput.value.trim();
+    if (trimmed.length > 0) {
+      if (validationAlert && validationText && validationText.textContent.includes('Please paste or type study notes')) {
+        validationAlert.setAttribute('hidden', '');
+        validationAlert.style.display = 'none';
+      }
     }
   };
 
@@ -1487,6 +1483,7 @@ function validateStudyInput() {
     if (validationAlert && validationText) {
       validationText.textContent = 'Please paste or type study notes before generating materials.';
       validationAlert.removeAttribute('hidden');
+      validationAlert.style.display = 'flex';
     }
     notesInput.focus();
     return false;
@@ -1496,6 +1493,7 @@ function validateStudyInput() {
     if (validationAlert && validationText) {
       validationText.textContent = 'Notes are too brief. Please enter at least 15 characters of study material.';
       validationAlert.removeAttribute('hidden');
+      validationAlert.style.display = 'flex';
     }
     notesInput.focus();
     return false;
@@ -1503,6 +1501,7 @@ function validateStudyInput() {
 
   if (validationAlert) {
     validationAlert.setAttribute('hidden', '');
+    validationAlert.style.display = 'none';
   }
   return true;
 }
@@ -1985,15 +1984,12 @@ async function handleGenerateClick() {
       classifications: {}
     };
 
-    // Update Statistics
-    AppState.stats.sessionsCount += 1;
-    updateDashboardStats();
-
-    // Phase 4: Save session to persistent storage
+    // Save session to persistent storage first, then update dashboard stats
     const savedId = saveStudySession(userTopic, userNotes, true);
     if (savedId) {
       console.log('Session saved:', savedId);
     }
+    updateDashboardStats();
 
     // Render Views
     renderSummary();
@@ -2095,15 +2091,12 @@ function handleDemoModeClick() {
     classifications: {}
   };
 
-  // Update In-Memory Statistics
-  AppState.stats.sessionsCount += 1;
-  updateDashboardStats();
-
-  // Phase 4: Save session to persistent storage
+  // Save session to persistent storage first, then update dashboard stats
   const savedId = saveStudySession(userTopic, userNotes, false);
   if (savedId) {
     console.log('Demo session saved:', savedId);
   }
+  updateDashboardStats();
 
   // Render all three active views
   renderSummary();
@@ -2171,6 +2164,7 @@ function clearStudyInput() {
 
   if (validationAlert) {
     validationAlert.setAttribute('hidden', '');
+    validationAlert.style.display = 'none';
   }
 
   if (topicInput) topicInput.focus();
@@ -2725,17 +2719,11 @@ function finalizeQuizSubmission() {
 
   // Prevent multiple records from duplicate submissions in the same attempt
   if (!qState.attemptRecorded) {
-    AppState.stats.quizzesCount += 1;
-    AppState.stats.quizScores.push(percentage);
-
-    const sum = AppState.stats.quizScores.reduce((acc, val) => acc + val, 0);
-    AppState.stats.averageScore = Math.round(sum / AppState.stats.quizScores.length);
-
     qState.attemptRecorded = true;
-    updateDashboardStats();
 
-    // Phase 4: Save quiz attempt to persistent storage
+    // Save quiz attempt to persistent storage first, then update dashboard stats
     saveQuizAttempt();
+    updateDashboardStats();
   }
 
   renderQuizResults();
@@ -3220,19 +3208,24 @@ function updateDashboardStats() {
   const quizzesEl = document.getElementById('stat-quizzes-count');
   const scoreAvgEl = document.getElementById('stat-score-avg');
 
-  // Phase 4: Merge in-memory stats with stored data for dashboard quick stats
+  // Read actual saved data directly from LocalStorage
   const storedSessions = StorageManager.readJSON(STORAGE_KEYS.SESSIONS, []);
   const storedAttempts = StorageManager.readJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
 
-  // Use the larger of stored count or in-memory count (in-memory includes the current unsaved session)
-  const totalSessions = Math.max(storedSessions.length, AppState.stats.sessionsCount);
-  const totalQuizzes = Math.max(storedAttempts.length, AppState.stats.quizzesCount);
+  const totalSessions = storedSessions.length;
+  const totalQuizzes = storedAttempts.length;
 
-  let avgScore = AppState.stats.averageScore;
+  let avgScore = 0;
   if (storedAttempts.length > 0) {
     const sum = storedAttempts.reduce((acc, a) => acc + (a.percentage || 0), 0);
     avgScore = Math.round(sum / storedAttempts.length);
   }
+
+  // Keep AppState.stats synchronized with persistent storage
+  AppState.stats.sessionsCount = totalSessions;
+  AppState.stats.quizzesCount = totalQuizzes;
+  AppState.stats.quizScores = storedAttempts.map(a => a.percentage || 0);
+  AppState.stats.averageScore = avgScore;
 
   if (sessionsEl) {
     sessionsEl.textContent = String(totalSessions);
@@ -4475,6 +4468,7 @@ function deleteSession(sessionId) {
       }
 
       renderHistoryList();
+      updateDashboardStats();
       showToast('Study session deleted.', 'info');
     }
   });
@@ -4506,6 +4500,7 @@ function clearAllHistory() {
       AppState.isRestoredSession = false;
 
       renderHistoryList();
+      updateDashboardStats();
       showToast('All study history cleared.', 'info');
     }
   });
@@ -4950,6 +4945,7 @@ function mergeImportedData(importedSessions, importedAttempts, importedFcProgres
   StorageManager.writeJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, existingAttempts);
   StorageManager.writeJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, existingFcProgress);
 
+  updateDashboardStats();
   showToast(`Merged: +${addedSessions} sessions, +${addedAttempts} quiz attempts, +${addedProgress} flashcard records.`, 'success');
 }
 
@@ -4961,6 +4957,7 @@ function replaceWithImportedData(importedSessions, importedAttempts, importedFcP
   StorageManager.writeJSON(STORAGE_KEYS.QUIZ_ATTEMPTS, importedAttempts);
   StorageManager.writeJSON(STORAGE_KEYS.FLASHCARD_PROGRESS, importedFcProgress);
 
+  updateDashboardStats();
   showToast(`Imported: ${importedSessions.length} sessions, ${importedAttempts.length} quiz attempts, ${importedFcProgress.length} flashcard records.`, 'success');
 }
 
@@ -4993,6 +4990,7 @@ function resetQuizProgress() {
       sessions.forEach(s => { s.quizScore = null; });
       StorageManager.writeJSON(STORAGE_KEYS.SESSIONS, sessions);
 
+      updateDashboardStats();
       showToast('All quiz scores reset.', 'info');
     }
   });
@@ -5057,6 +5055,7 @@ function clearAllStudyData() {
       AppState.activeSessionId = null;
       AppState.isRestoredSession = false;
 
+      updateDashboardStats();
       showToast('All study data has been permanently deleted.', 'info');
     }
   });
